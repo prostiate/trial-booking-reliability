@@ -1,0 +1,21 @@
+{
+  "name": "@trial-booking/api-client",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src"
+  },
+  "dependencies": {
+    "@trial-booking/server": "workspace:*",
+    "@trial-booking/shared": "workspace:*",
+    "hono": "^4.7.4"
+  },
+  "devDependencies": {
+    "typescript": "^5.8.2"
+  }
+}
