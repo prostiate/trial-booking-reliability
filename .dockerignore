@@ -1,0 +1,9 @@
+node_modules
+.nuxt
+.output
+.turbo
+.wrangler
+.git
+.lavish
+coverage
+*.log

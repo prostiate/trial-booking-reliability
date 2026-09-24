@@ -5,6 +5,7 @@ dist/
 .wrangler/
 .turbo/
 .lavish/
+.agents/
 pnpm-lock.yaml
 coverage/
 *.min.js
