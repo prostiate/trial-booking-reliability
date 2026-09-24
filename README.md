@@ -2,6 +2,7 @@
 
 Full-stack implementation of the **Ottodot Senior Full-Stack Engineer Take-Home Assignment ([`docs/TAKE_HOME_ASSIGNMENT.md`](./docs/TAKE_HOME_ASSIGNMENT.md))**.
 
+- **Video Walkthrough (YouTube)**: [https://youtu.be/zkONWBpNXjg](https://youtu.be/zkONWBpNXjg)
 - **Live Deployment**: [https://trial-booking-reliability.irfankurniawan.com](https://trial-booking-reliability.irfankurniawan.com)
 - **Assignment Specification**: [`docs/TAKE_HOME_ASSIGNMENT.md`](./docs/TAKE_HOME_ASSIGNMENT.md)
 - **AI Workflow Reflection**: [`AI_USAGE.md`](./AI_USAGE.md)
