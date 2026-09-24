@@ -1,8 +1,12 @@
 <script setup lang="ts">
 import { CreateCheckoutInputSchema, type SeatNumber } from '@trial-booking/shared';
+import { useAutoStagePresets } from '~/composables/useAutoStagePresets';
 import { useBookingStore } from '~/stores/booking';
+import { formatMillisecondTimestamp } from '~/utils/date';
 
 const bookingStore = useBookingStore();
+const { stageRandomChild, stageSameSeatRace, stageDuplicateChild, stageOverbookCapacity } =
+  useAutoStagePresets();
 
 await useAsyncData('booking-catalog', () => bookingStore.fetchCatalog());
 
@@ -42,20 +46,6 @@ const studentOptions = computed(() =>
   }))
 );
 
-function formatMillisecondTimestamp(iso: string): string {
-  if (!iso) return '';
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return iso;
-  const yyyy = d.getFullYear();
-  const mm = String(d.getMonth() + 1).padStart(2, '0');
-  const dd = String(d.getDate()).padStart(2, '0');
-  const hh = String(d.getHours()).padStart(2, '0');
-  const min = String(d.getMinutes()).padStart(2, '0');
-  const ss = String(d.getSeconds()).padStart(2, '0');
-  const sss = String(d.getMilliseconds()).padStart(3, '0');
-  return `${yyyy}-${mm}-${dd} ${hh}:${min}:${ss}.${sss}`;
-}
-
 async function handleConfirmSeat() {
   const parsed = CreateCheckoutInputSchema.safeParse({
     parentId: bookingStore.selectedParentId,
@@ -93,7 +83,7 @@ async function handleConfirmSeat() {
                   (bookingStore.lastOutcome.ok ? 'OK' : 'ERROR')
                 }}
               </UBadge>
-              <span class="text-xs font-mono font-semibold text-slate-700">
+              <span class="text-xs tabular-nums font-semibold text-slate-700">
                 Executed: {{ formatMillisecondTimestamp(bookingStore.lastOutcome.executedAt) }}
               </span>
             </div>
@@ -117,7 +107,7 @@ async function handleConfirmSeat() {
                     HTTP {{ item.httpStatus }} · {{ item.errorCode ?? item.status.toUpperCase() }}
                   </UBadge>
                 </div>
-                <div class="font-mono text-[11px] text-slate-600">
+                <div class="tabular-nums text-[11px] text-slate-600">
                   Hold Created: {{ formatMillisecondTimestamp(item.holdCreatedAt) }} · Payment
                   Executed: {{ formatMillisecondTimestamp(item.paymentExecutedAt) }}
                 </div>
@@ -168,20 +158,68 @@ async function handleConfirmSeat() {
           @update:selected-seat-number="(seat) => (bookingStore.selectedSeatNumber = seat)" />
 
         <UCard>
-          <div class="flex items-center justify-between gap-3">
-            <span class="text-xs font-medium text-slate-600">
-              Selected Seat #{{ bookingStore.selectedSeatNumber }} ·
-              {{ bookingStore.selectedClass?.title }}
-            </span>
+          <div class="space-y-3">
+            <div class="flex items-center justify-between gap-3">
+              <span class="text-xs font-medium text-slate-600">
+                Selected Seat #{{ bookingStore.selectedSeatNumber }} ·
+                {{ bookingStore.selectedClass?.title }}
+              </span>
 
-            <UButton
-              color="primary"
-              size="sm"
-              icon="i-lucide-check-circle-2"
-              :loading="bookingStore.isLoading"
-              @click="handleConfirmSeat">
-              Confirm Seat
-            </UButton>
+              <UButton
+                color="primary"
+                size="sm"
+                icon="i-lucide-check-circle-2"
+                :loading="bookingStore.isLoading"
+                @click="handleConfirmSeat">
+                Confirm Seat
+              </UButton>
+            </div>
+
+            <div class="pt-3 border-t border-slate-200 flex flex-wrap items-center gap-2">
+              <span class="text-xs font-bold text-slate-700 mr-1">
+                Auto-Select &amp; Confirm to Pending:
+              </span>
+
+              <UButton
+                color="neutral"
+                variant="subtle"
+                size="xs"
+                icon="i-lucide-shuffle"
+                :loading="bookingStore.isLoading"
+                @click="stageRandomChild">
+                Random Seat
+              </UButton>
+
+              <UButton
+                color="warning"
+                variant="subtle"
+                size="xs"
+                icon="i-lucide-zap"
+                :loading="bookingStore.isLoading"
+                @click="stageSameSeatRace">
+                Same Taken Seat Race (2x)
+              </UButton>
+
+              <UButton
+                color="warning"
+                variant="subtle"
+                size="xs"
+                icon="i-lucide-copy"
+                :loading="bookingStore.isLoading"
+                @click="stageDuplicateChild">
+                Duplicate Child (2x)
+              </UButton>
+
+              <UButton
+                color="error"
+                variant="subtle"
+                size="xs"
+                icon="i-lucide-users"
+                :loading="bookingStore.isLoading"
+                @click="stageOverbookCapacity">
+                Overbook Class (&gt;4 Cap)
+              </UButton>
+            </div>
           </div>
         </UCard>
       </UForm>

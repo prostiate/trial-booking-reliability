@@ -7,6 +7,7 @@ import {
 } from '@trial-booking/shared';
 import { useApiClient } from '~/composables/useApiClient';
 import { useBookingStore } from '~/stores/booking';
+import { formatMillisecondTimestamp } from '~/utils/date';
 
 interface ClassRosterGroup {
   trialClass: ClassCatalogItem;
@@ -163,6 +164,7 @@ await useAsyncData('class-rosters', () => fetchRosters());
                   <th class="py-2 px-3">Seat</th>
                   <th class="py-2 px-3">Student</th>
                   <th class="py-2 px-3">Parent</th>
+                  <th class="py-2 px-3">Confirmed Timestamp</th>
                   <th class="py-2 px-3">Status</th>
                 </tr>
               </thead>
@@ -171,12 +173,15 @@ await useAsyncData('class-rosters', () => fetchRosters());
                   <td class="py-2 px-3 font-bold text-slate-900">Seat {{ row.seatNumber }}</td>
                   <td class="py-2 px-3 font-medium text-slate-900">{{ row.studentName }}</td>
                   <td class="py-2 px-3 text-slate-600">{{ row.parentName }}</td>
+                  <td class="py-2 px-3 tabular-nums text-[11px] text-slate-600">
+                    {{ formatMillisecondTimestamp(row.confirmedAt ?? row.updatedAt) }}
+                  </td>
                   <td class="py-2 px-3">
                     <BookingStatusBadge :status="row.status" />
                   </td>
                 </tr>
                 <tr v-if="group.confirmedRoster.length === 0">
-                  <td colspan="4" class="py-4 text-center text-slate-500">
+                  <td colspan="5" class="py-4 text-center text-slate-500">
                     No confirmed students yet.
                   </td>
                 </tr>
@@ -201,13 +206,16 @@ await useAsyncData('class-rosters', () => fetchRosters());
             <div
               v-for="attempt in group.nonRosterAttempts"
               :key="attempt.id"
-              class="p-2.5 rounded border border-slate-200 bg-slate-50 flex justify-between items-center gap-2 text-xs">
-              <div>
+              class="p-2.5 rounded border border-slate-200 bg-slate-50 flex justify-between items-start gap-2 text-xs">
+              <div class="space-y-0.5">
                 <div class="font-bold text-slate-900">
                   {{ attempt.studentName }} (Seat {{ attempt.seatNumber }})
                 </div>
-                <div class="font-mono text-[11px] text-slate-600">
+                <div class="text-[11px] font-medium text-slate-700">
                   {{ attempt.conflictReason || attempt.status }}
+                </div>
+                <div class="tabular-nums text-[11px] text-slate-500">
+                  {{ formatMillisecondTimestamp(attempt.updatedAt) }}
                 </div>
               </div>
               <BookingStatusBadge :status="attempt.status" />

@@ -13,7 +13,6 @@ dist/
 coverage/
 
 # Local private prompts & editor state
-docs/prompts/
 .claude/
 .lavish/
 skills-lock.json

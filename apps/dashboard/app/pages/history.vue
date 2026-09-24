@@ -2,6 +2,7 @@
 import { BOOKING_STATUSES, type EnrichedBooking } from '@trial-booking/shared';
 import { useApiClient } from '~/composables/useApiClient';
 import { useBookingStore } from '~/stores/booking';
+import { formatMillisecondTimestamp } from '~/utils/date';
 
 const api = useApiClient();
 const bookingStore = useBookingStore();
@@ -119,14 +120,14 @@ await useAsyncData('booking-history', () => fetchHistory());
           </thead>
           <tbody class="divide-y divide-slate-200">
             <tr v-for="row in items" :key="row.id">
-              <td class="py-2.5 px-3 font-mono text-slate-700">{{ row.id }}</td>
+              <td class="py-2.5 px-3 tabular-nums text-slate-700">{{ row.id }}</td>
               <td class="py-2.5 px-3 font-semibold text-slate-900">{{ row.studentName }}</td>
               <td class="py-2.5 px-3 text-slate-700">{{ row.classTitle }}</td>
               <td class="py-2.5 px-3 font-semibold text-slate-800">Seat {{ row.seatNumber }}</td>
               <td class="py-2.5 px-3">
                 <BookingStatusBadge :status="row.status" />
               </td>
-              <td class="py-2.5 px-3 font-mono">
+              <td class="py-2.5 px-3 tabular-nums">
                 <span v-if="row.paymentAttempts.length > 0" class="text-slate-700">
                   {{ row.paymentAttempts[row.paymentAttempts.length - 1]?.status }} · Rp
                   {{
@@ -137,8 +138,8 @@ await useAsyncData('booking-history', () => fetchHistory());
                 </span>
                 <span v-else class="text-slate-500">awaiting_payment</span>
               </td>
-              <td class="py-2.5 px-3 font-mono text-slate-500">
-                {{ row.updatedAt.slice(11, 19) }}
+              <td class="py-2.5 px-3 tabular-nums text-slate-500">
+                {{ formatMillisecondTimestamp(row.updatedAt) }}
               </td>
             </tr>
           </tbody>

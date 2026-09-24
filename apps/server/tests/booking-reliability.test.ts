@@ -259,4 +259,147 @@ describe('Ottodot Trial Booking Reliability & Concurrency Suite', () => {
     expect(cancelRes.httpStatus).toBe(200);
     expect(cancelRes.data?.status).toBe('cancelled');
   });
+
+  it('prevents duplicate confirmed booking when the same child stages 2 pending checkouts and pays both (Duplicate Child 2x flow)', async () => {
+    // Stage 2 pending checkouts for the same child (stu-arka) in cls-sci-orbit (Seat 2 & Seat 3)
+    const hold1 = await engine.createCheckoutIntent({
+      parentId: 'par-siti',
+      studentId: 'stu-arka',
+      trialClassId: 'cls-sci-orbit',
+      seatNumber: 2,
+    });
+    const hold2 = await engine.createCheckoutIntent({
+      parentId: 'par-siti',
+      studentId: 'stu-arka',
+      trialClassId: 'cls-sci-orbit',
+      seatNumber: 3,
+    });
+    expect(hold1.ok).toBe(true);
+    expect(hold2.ok).toBe(true);
+
+    // First payment succeeds
+    const pay1 = await engine.processPayment(hold1.data!.id, {
+      paymentOutcome: 'success',
+      paymentMethod: 'card_visa_4242',
+    });
+    expect(pay1.ok).toBe(true);
+    expect(pay1.httpStatus).toBe(200);
+    expect(pay1.data?.status).toBe('confirmed');
+
+    // Second payment for the same child + class is rejected at payment gate with 409 DUPLICATE_CONFIRMED_BOOKING
+    const pay2 = await engine.processPayment(hold2.data!.id, {
+      paymentOutcome: 'success',
+      paymentMethod: 'card_visa_4242',
+    });
+    expect(pay2.ok).toBe(false);
+    expect(pay2.httpStatus).toBe(409);
+    expect(pay2.errorCode).toBe(BOOKING_ERROR_CODES.DUPLICATE_CONFIRMED_BOOKING);
+    expect(pay2.data?.status).toBe('expired_conflict');
+    expect(pay2.data?.paymentAttempts[0].amountIdr).toBe(0);
+  });
+
+  it('caps confirmed roster at 4 when 4 pending checkouts compete for 3 remaining open seats (Overbook >4 Cap batch flow)', async () => {
+    // cls-sci-orbit starts with 1/4 confirmed (stu-dina in Seat 1) -> 3 seats left (Seats 2, 3, 4)
+    const h1 = await engine.createCheckoutIntent({
+      parentId: 'par-siti',
+      studentId: 'stu-arka',
+      trialClassId: 'cls-sci-orbit',
+      seatNumber: 2,
+    });
+    const h2 = await engine.createCheckoutIntent({
+      parentId: 'par-siti',
+      studentId: 'stu-nadia',
+      trialClassId: 'cls-sci-orbit',
+      seatNumber: 3,
+    });
+    const h3 = await engine.createCheckoutIntent({
+      parentId: 'par-budi',
+      studentId: 'stu-raka',
+      trialClassId: 'cls-sci-orbit',
+      seatNumber: 4,
+    });
+    const h4 = await engine.createCheckoutIntent({
+      parentId: 'par-andi',
+      studentId: 'stu-evan',
+      trialClassId: 'cls-sci-orbit',
+      seatNumber: 4,
+    });
+
+    const p1 = await engine.processPayment(h1.data!.id, {
+      paymentOutcome: 'success',
+      paymentMethod: 'card_visa_4242',
+    });
+    const p2 = await engine.processPayment(h2.data!.id, {
+      paymentOutcome: 'success',
+      paymentMethod: 'card_visa_4242',
+    });
+    const p3 = await engine.processPayment(h3.data!.id, {
+      paymentOutcome: 'success',
+      paymentMethod: 'card_visa_4242',
+    });
+    // Class is now 4/4 full! The 4th pending checkout (stu-evan) must be rejected with 409
+    const p4 = await engine.processPayment(h4.data!.id, {
+      paymentOutcome: 'success',
+      paymentMethod: 'card_visa_4242',
+    });
+
+    expect(p1.httpStatus).toBe(200);
+    expect(p2.httpStatus).toBe(200);
+    expect(p3.httpStatus).toBe(200);
+    expect(p4.httpStatus).toBe(409);
+    expect(p4.errorCode).toBe(BOOKING_ERROR_CODES.LAST_SEAT_RACE_LOST);
+    expect(p4.data?.status).toBe('expired_conflict');
+
+    const orbitsCatalog = engine.getClassCatalog().find((c) => c.id === 'cls-sci-orbit');
+    expect(orbitsCatalog?.confirmedCount).toBe(MAX_CLASS_CAPACITY);
+  });
+
+  it('allows a parent to book two different siblings in the same class and allows retry after payment failure', async () => {
+    // 1. Parent Budi Santoso already has Dina (stu-dina) confirmed in cls-sci-orbit (Seat 1).
+    //    Sibling Raka (stu-raka) under the same parent should be allowed to book Seat 2.
+    const siblingRes = await app.request('/api/bookings/submit', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        parentId: 'par-budi',
+        studentId: 'stu-raka',
+        trialClassId: 'cls-sci-orbit',
+        seatNumber: 2,
+        action: 'pay_success',
+      }),
+    });
+    expect(siblingRes.status).toBe(200);
+    const siblingBody = await siblingRes.json();
+    expect(siblingBody.ok).toBe(true);
+    expect(siblingBody.data.status).toBe('confirmed');
+
+    // 2. Nadia Rahma (stu-nadia) previously had a seeded payment_failed attempt in cls-sci-orbit.
+    //    She should be able to retry with a valid card and become confirmed on Seat 3,
+    //    while the historical payment_failed record stays in nonRosterAttempts.
+    const retryRes = await app.request('/api/bookings/submit', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        parentId: 'par-siti',
+        studentId: 'stu-nadia',
+        trialClassId: 'cls-sci-orbit',
+        seatNumber: 3,
+        action: 'pay_success',
+      }),
+    });
+    expect(retryRes.status).toBe(200);
+    const retryBody = await retryRes.json();
+    expect(retryBody.ok).toBe(true);
+    expect(retryBody.data.status).toBe('confirmed');
+
+    const rosterRes = await app.request('/api/rosters');
+    const rosterBody = await rosterRes.json();
+    const orbitRoster = rosterBody.data.find(
+      (r: { trialClass: { id: string } }) => r.trialClass.id === 'cls-sci-orbit'
+    );
+    expect(orbitRoster.confirmedCount).toBe(3);
+    expect(
+      orbitRoster.nonRosterAttempts.some((b: { status: string }) => b.status === 'payment_failed')
+    ).toBe(true);
+  });
 });

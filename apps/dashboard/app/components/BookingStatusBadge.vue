@@ -35,7 +35,7 @@ const badgeConfig = computed(() => {
 </script>
 
 <template>
-  <UBadge :color="badgeConfig.color" variant="subtle" size="sm" class="font-mono font-semibold">
+  <UBadge :color="badgeConfig.color" variant="subtle" size="sm" class="font-semibold">
     {{ badgeConfig.label }}
   </UBadge>
 </template>
