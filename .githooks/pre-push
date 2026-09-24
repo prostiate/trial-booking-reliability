@@ -1,0 +1,13 @@
+#!/bin/sh
+# Local gate before pushing (GitHub Actions is disabled; this hook guards all pushes).
+echo "[pre-push] running pnpm verify (format + lint + typecheck)..."
+pnpm verify || {
+  echo "[pre-push] verify FAILED - push aborted. Fix the above, then push again."
+  exit 1
+}
+echo "[pre-push] running pnpm test (unit + concurrency suite)..."
+pnpm test || {
+  echo "[pre-push] tests FAILED - push aborted. Fix the above, then push again."
+  exit 1
+}
+echo "[pre-push] all checks passed."

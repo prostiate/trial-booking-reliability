@@ -1,0 +1,33 @@
+{
+  "name": "trial-booking-reliability",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "turbo dev",
+    "build": "turbo build",
+    "test": "turbo test",
+    "lint": "turbo lint && pnpm lint:node",
+    "lint:node": "eslint apps/server packages",
+    "typecheck": "turbo typecheck",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "verify": "pnpm format:check && pnpm lint && pnpm typecheck",
+    "ci:check": "pnpm verify && pnpm test",
+    "docker:up": "docker compose up --build -d",
+    "docker:down": "docker compose down",
+    "docker:logs": "docker compose logs -f",
+    "deploy:server": "pnpm --filter @trial-booking/server exec wrangler deploy",
+    "deploy:dashboard": "pnpm --filter @trial-booking/dashboard build && pnpm --filter @trial-booking/dashboard exec wrangler deploy",
+    "prepare": "git config core.hooksPath .githooks || true"
+  },
+  "devDependencies": {
+    "eslint": "^9.22.0",
+    "eslint-config-prettier": "^10.1.1",
+    "globals": "^16.0.0",
+    "prettier": "^3.5.3",
+    "turbo": "^2.4.4",
+    "typescript": "^5.8.2",
+    "typescript-eslint": "^8.26.1"
+  },
+  "packageManager": "pnpm@10.6.5"
+}
