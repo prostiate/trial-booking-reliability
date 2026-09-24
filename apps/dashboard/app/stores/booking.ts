@@ -9,12 +9,27 @@ import type {
 } from '@trial-booking/shared';
 import { useApiClient } from '~/composables/useApiClient';
 
+export interface BatchOutcomeItem {
+  bookingId: string;
+  studentName: string;
+  seatNumber: number;
+  holdCreatedAt: string;
+  paymentExecutedAt: string;
+  ok: boolean;
+  httpStatus: number;
+  errorCode: string | null;
+  status: string;
+  message: string;
+}
+
 export interface OutcomeNotice {
   ok: boolean;
   httpStatus: number;
   errorCode: string | null;
   message: string;
+  executedAt: string;
   booking: EnrichedBooking | null;
+  batchItems?: BatchOutcomeItem[];
 }
 
 export const useBookingStore = defineStore('booking', () => {
@@ -102,6 +117,7 @@ export const useBookingStore = defineStore('booking', () => {
         httpStatus: res.status,
         errorCode: body.errorCode,
         message: body.message,
+        executedAt: body.data?.updatedAt ?? new Date().toISOString(),
         booking: body.data,
       };
       await fetchCatalog();
@@ -125,11 +141,14 @@ export const useBookingStore = defineStore('booking', () => {
         },
       });
       const body = await res.json();
+      const latestAttempt =
+        body.data?.paymentAttempts?.[body.data.paymentAttempts.length - 1] ?? null;
       lastOutcome.value = {
         ok: body.ok,
         httpStatus: res.status,
         errorCode: body.errorCode,
         message: body.message,
+        executedAt: latestAttempt?.createdAt ?? body.data?.updatedAt ?? new Date().toISOString(),
         booking: body.data,
       };
       await fetchCatalog();
@@ -151,6 +170,7 @@ export const useBookingStore = defineStore('booking', () => {
         httpStatus: res.status,
         errorCode: body.errorCode,
         message: body.message,
+        executedAt: body.data?.updatedAt ?? new Date().toISOString(),
         booking: body.data,
       };
       await fetchCatalog();
@@ -179,10 +199,19 @@ export const useBookingStore = defineStore('booking', () => {
             },
           });
           const body = await res.json();
+          const latestAttempt =
+            body.data?.paymentAttempts?.[body.data.paymentAttempts.length - 1] ?? null;
           return {
-            status: res.status,
+            bookingId: item.id,
+            studentName: item.studentName,
+            seatNumber: item.seatNumber,
+            holdCreatedAt: item.createdAt,
+            paymentExecutedAt:
+              latestAttempt?.createdAt ?? body.data?.updatedAt ?? new Date().toISOString(),
             ok: body.ok,
+            httpStatus: res.status,
             errorCode: body.errorCode,
+            status: body.data?.status ?? 'unknown',
             message: body.message,
             data: body.data,
           };
@@ -192,24 +221,26 @@ export const useBookingStore = defineStore('booking', () => {
       if (results.length === 1 && results[0]) {
         lastOutcome.value = {
           ok: results[0].ok,
-          httpStatus: results[0].status,
+          httpStatus: results[0].httpStatus,
           errorCode: results[0].errorCode,
           message: results[0].message,
+          executedAt: results[0].paymentExecutedAt,
           booking: results[0].data,
         };
       } else {
         const confirmedCount = results.filter((r) => r.ok).length;
         const rejectedCount = results.length - confirmedCount;
-        const details = results.map((r) => r.message).join(' | ');
         lastOutcome.value = {
           ok: rejectedCount === 0,
           httpStatus: rejectedCount === 0 ? 200 : 409,
           errorCode:
             rejectedCount === 0
               ? null
-              : (results.find((r) => !r.ok)?.errorCode ?? 'BATCH_PARTIAL_CONFLICT'),
-          message: `Pay All (${results.length}): ${confirmedCount} confirmed, ${rejectedCount} rejected/failed. ${details}`,
+              : (results.find((r) => !r.ok)?.errorCode ?? 'LAST_SEAT_RACE_LOST'),
+          message: `Concurrent Pay All executed at real-time (${results.length} requests via Promise.all): ${confirmedCount} confirmed, ${rejectedCount} rejected/failed.`,
+          executedAt: new Date().toISOString(),
           booking: results[0]?.data ?? null,
+          batchItems: results.map(({ data: _data, ...rest }) => rest),
         };
       }
 
@@ -240,6 +271,7 @@ export const useBookingStore = defineStore('booking', () => {
         httpStatus: 200,
         errorCode: null,
         message: `Cancelled all ${results.length} pending checkout(s) for ${selectedClass.value?.title ?? 'selected class'}.`,
+        executedAt: new Date().toISOString(),
         booking: null,
       };
       await fetchCatalog();

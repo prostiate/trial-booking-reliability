@@ -42,6 +42,20 @@ const studentOptions = computed(() =>
   }))
 );
 
+function formatMillisecondTimestamp(iso: string): string {
+  if (!iso) return '';
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return iso;
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  const hh = String(d.getHours()).padStart(2, '0');
+  const min = String(d.getMinutes()).padStart(2, '0');
+  const ss = String(d.getSeconds()).padStart(2, '0');
+  const sss = String(d.getMilliseconds()).padStart(3, '0');
+  return `${yyyy}-${mm}-${dd} ${hh}:${min}:${ss}.${sss}`;
+}
+
 async function handleConfirmSeat() {
   const parsed = CreateCheckoutInputSchema.safeParse({
     parentId: bookingStore.selectedParentId,
@@ -57,6 +71,70 @@ async function handleConfirmSeat() {
 <template>
   <div class="grid grid-cols-1 lg:grid-cols-12 gap-5">
     <div class="lg:col-span-8 space-y-4">
+      <div
+        v-if="bookingStore.lastOutcome"
+        class="rounded-xl border-2 p-4 shadow-xs transition-all"
+        :class="
+          bookingStore.lastOutcome.ok
+            ? 'border-emerald-500 bg-emerald-50 text-slate-900'
+            : 'border-rose-500 bg-rose-50 text-slate-900'
+        ">
+        <div class="flex items-start justify-between gap-3">
+          <div class="space-y-1.5">
+            <div class="flex flex-wrap items-center gap-2">
+              <UBadge
+                :color="bookingStore.lastOutcome.ok ? 'success' : 'error'"
+                variant="solid"
+                size="sm">
+                HTTP {{ bookingStore.lastOutcome.httpStatus }} ·
+                {{
+                  bookingStore.lastOutcome.errorCode ??
+                  bookingStore.lastOutcome.booking?.status?.toUpperCase() ??
+                  'OK'
+                }}
+              </UBadge>
+              <span class="text-xs font-mono font-semibold text-slate-700">
+                Executed: {{ formatMillisecondTimestamp(bookingStore.lastOutcome.executedAt) }}
+              </span>
+            </div>
+
+            <p class="text-sm font-semibold text-slate-900">
+              {{ bookingStore.lastOutcome.message }}
+            </p>
+
+            <div
+              v-if="bookingStore.lastOutcome.batchItems?.length"
+              class="mt-2 space-y-1.5 pt-2 border-t border-slate-300">
+              <div
+                v-for="item in bookingStore.lastOutcome.batchItems"
+                :key="item.bookingId"
+                class="rounded-lg bg-white/90 border border-slate-200 p-2.5 text-xs space-y-1">
+                <div class="flex flex-wrap items-center justify-between gap-2">
+                  <span class="font-bold text-slate-900">
+                    {{ item.studentName }} (Seat #{{ item.seatNumber }})
+                  </span>
+                  <UBadge :color="item.ok ? 'success' : 'error'" variant="subtle" size="xs">
+                    HTTP {{ item.httpStatus }} · {{ item.errorCode ?? item.status.toUpperCase() }}
+                  </UBadge>
+                </div>
+                <div class="font-mono text-[11px] text-slate-600">
+                  Hold Created: {{ formatMillisecondTimestamp(item.holdCreatedAt) }} · Payment
+                  Executed: {{ formatMillisecondTimestamp(item.paymentExecutedAt) }}
+                </div>
+                <div class="font-medium text-slate-800">{{ item.message }}</div>
+              </div>
+            </div>
+          </div>
+
+          <UButton
+            color="neutral"
+            variant="ghost"
+            size="xs"
+            icon="i-lucide-x"
+            @click="bookingStore.lastOutcome = null" />
+        </div>
+      </div>
+
       <UForm :schema="CreateCheckoutInputSchema" :state="formState" class="space-y-4">
         <UCard>
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -113,7 +191,6 @@ async function handleConfirmSeat() {
       <PendingCheckoutsDock
         :selected-class-title="bookingStore.selectedClass?.title ?? 'Selected Class'"
         :pending-checkouts="bookingStore.selectedClassPendingCheckouts"
-        :last-outcome="bookingStore.lastOutcome"
         :is-loading="bookingStore.isLoading"
         @complete-payment="(id, outcome) => bookingStore.completePendingPayment(id, outcome)"
         @cancel-booking="(id) => bookingStore.cancelPendingBooking(id)"

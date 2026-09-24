@@ -1,11 +1,9 @@
 <script setup lang="ts">
 import type { EnrichedBooking } from '@trial-booking/shared';
-import type { OutcomeNotice } from '~/stores/booking';
 
 defineProps<{
   selectedClassTitle: string;
   pendingCheckouts: EnrichedBooking[];
-  lastOutcome: OutcomeNotice | null;
   isLoading: boolean;
 }>();
 
@@ -99,7 +97,7 @@ const cardOptions = [
         </div>
 
         <div class="flex items-center justify-between text-[11px] font-mono text-slate-600">
-          <span>{{ formatMillisecondTimestamp(item.createdAt) }}</span>
+          <span>Hold: {{ formatMillisecondTimestamp(item.createdAt) }}</span>
           <span class="font-sans font-semibold text-slate-800">
             Rp {{ item.priceIdr.toLocaleString('id-ID') }}
           </span>
@@ -138,17 +136,6 @@ const cardOptions = [
           </UButton>
         </div>
       </div>
-
-      <UAlert
-        v-if="lastOutcome"
-        :color="lastOutcome.ok ? 'success' : 'error'"
-        variant="subtle"
-        :title="
-          lastOutcome.errorCode
-            ? `${lastOutcome.httpStatus} · ${lastOutcome.errorCode}`
-            : `${lastOutcome.httpStatus} · ${lastOutcome.booking?.status?.toUpperCase() ?? 'OK'}`
-        "
-        :description="lastOutcome.message" />
     </div>
   </UCard>
 </template>
