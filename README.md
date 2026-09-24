@@ -154,7 +154,11 @@ Click **`Reset Data`** in the top navbar at any time to restore this exact snaps
 
 ## 6. Time Spent, Assumptions, Scope Cuts & Post-Release Plan
 
-- **Time Spent**: ~3.5 hours (0.5h domain modeling & concurrency design, 1.5h Hono engine + rate limiter + Vitest concurrency suite, 1.0h Nuxt 4 UI & Pending Checkouts flow, 0.5h Docker, Cloudflare Workers & documentation).
+- **Time Spent (~3 hours 25 minutes total, within the 4-hour cap)**:
+  - **~09:40 – 10:16 WIB (~36 min) — Requirements Analysis & Initial Prompt Engineering**: Reading the assignment brief, deciding the monorepo stack (`Hono + Nuxt 4 + Zod`), and authoring a detailed specification prompt (`docs/prompts/prompt-1.md`) covering edge-case invariants, Cloudflare Workers security/rate-limiting constraints, and strict TypeScript/component-size rules before writing code.
+  - **10:16 – 11:30 WIB (~1 hr 14 min, First Commit `24442b8` $\rightarrow$ PR #1 `da1c0b2`) — Core Architecture, Visual Design Loop & Full-Stack Build**: Scaffolding the Turborepo workspace, iterating on UI layouts (`lavish` + `frontend-design` skills), implementing the atomic Hono booking engine (`store.runAtomic()`), Vitest concurrency suite, Nuxt 4 dashboard, Docker Compose, and Cloudflare Workers deployment.
+  - **11:30 – 12:21 WIB (~51 min, PR #2 `4dc0b6a`) — Manual QA & Production-Grade Checkout Steering**: Manually testing every flow, removing the redundant `/simulator` route, steering the product into a real production-grade checkout (`Confirm Seat` $\rightarrow$ class-filtered `Pending Checkouts` $\rightarrow$ `Pay` / `Pay All` / `Cancel All`), and placing a high-contrast HTTP/timestamp outcome alert at the top of `/`.
+  - **12:21 – 13:05 WIB (~44 min, PR #3) — Quick Auto-Stage Shortcuts, Timestamp Readability & Documentation**: Adding 1-click `Auto-Select & Confirm to Pending` preset buttons on `/` (to stage duplicates, overbooking, and same-seat races without manual clicking), formatting millisecond timestamps via `date-fns` (`tabular-nums` sans-serif without dotted-zero monospace), and finalizing `README.md` + `AI_USAGE.md`.
 - **Assumptions Made**:
   - Duplicate booking prevention is scoped per `(studentId, trialClassId)` so a parent with two children (`Budi Santoso` -> `Dina` and `Raka`) can enroll both siblings in the same trial class if seats are open.
   - Seat selection (`Confirm Seat` / `pending_payment`) does not grant priority; **payment execution order (FIFO at `POST /api/bookings/:id/pay`)** determines who wins a contested seat.
