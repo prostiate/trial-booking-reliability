@@ -1,4 +1,8 @@
-const apiProxyTarget = process.env.NUXT_API_PROXY_TARGET || 'http://localhost:24001';
+const apiProxyTarget =
+  process.env.NUXT_API_PROXY_TARGET ||
+  (process.env.NODE_ENV === 'production'
+    ? 'https://trial-booking-reliability.irfankurniawan.com'
+    : 'http://127.0.0.1:24001');
 
 export default defineNuxtConfig({
   modules: ['@nuxt/eslint', '@nuxt/ui', '@vueuse/nuxt', '@pinia/nuxt'],

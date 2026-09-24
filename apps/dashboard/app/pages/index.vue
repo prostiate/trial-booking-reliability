@@ -90,7 +90,7 @@ async function handleConfirmSeat() {
                 {{
                   bookingStore.lastOutcome.errorCode ??
                   bookingStore.lastOutcome.booking?.status?.toUpperCase() ??
-                  'OK'
+                  (bookingStore.lastOutcome.ok ? 'OK' : 'ERROR')
                 }}
               </UBadge>
               <span class="text-xs font-mono font-semibold text-slate-700">
