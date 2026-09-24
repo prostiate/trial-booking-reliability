@@ -8,16 +8,13 @@ import {
   CreateTrialClassInputSchema,
   MAX_CLASS_CAPACITY,
   ProcessPaymentInputSchema,
-  SimulatorRunInputSchema,
 } from '@trial-booking/shared';
 import { bookingStore } from './store';
 import { BookingEngine } from './booking-engine';
-import { SimulatorEngine } from './simulator-engine';
 import { createRateLimiter } from './middleware/rate-limit';
 import { securityHeadersMiddleware } from './middleware/security';
 
 export const engine = new BookingEngine(bookingStore);
-export const simulator = new SimulatorEngine(bookingStore, engine);
 
 const app = new Hono()
   .use('*', securityHeadersMiddleware())
@@ -162,14 +159,6 @@ const app = new Hono()
     const bookingId = c.req.param('id');
     const result = await engine.cancelBooking(bookingId);
     return c.json(result, result.httpStatus);
-  })
-  .post('/api/simulator/run', zValidator('json', SimulatorRunInputSchema), async (c) => {
-    const input = c.req.valid('json');
-    const simResult = await simulator.runScenario(input.scenario, input.resetBeforeRun);
-    return c.json({
-      ok: true,
-      data: simResult,
-    });
   })
   .post('/api/reset', (c) => {
     bookingStore.resetToSeed();

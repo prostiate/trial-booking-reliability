@@ -46,9 +46,7 @@ In addition to fulfilling 100% of the core assignment requirements, we extended 
    - Explicitly separates the teacher's verified `confirmed` roster (`<= 4` students) from non-roster attempts (`pending_payment`, `payment_failed`, `expired_conflict`, `cancelled`) so Ops and reviewers can verify that failed payments and race losers never pollute the live class roster.
 5. **Server-Paginated Audit Ledger (`/history`) with Configurable Page Size (Default `100`)**:
    - Supports page size selection (`10`, `25`, `50`, `100`, `200` rows per page, defaulting to `100`) plus status and class filtering.
-6. **1-Click Deterministic Edge-Case State Simulator (`/simulator`)**:
-   - Runs the 4 core edge cases (`Last-Seat Race`, `Duplicate Booking`, `Overbooking >4 Cap`, `Payment Decline`) against the real `BookingEngine` and displays step-by-step HTTP status and state transition telemetry.
-7. **End-to-End Hono RPC Type Safety (`hc<AppType>`) & Application-Layer Security Hardening**:
+6. **End-to-End Hono RPC Type Safety (`hc<AppType>`) & Application-Layer Security Hardening**:
    - Zero `any` across all 4 workspace packages, sliding-window IP rate limiter + burst throttle (`429 Too Many Requests`), strict HTTP security headers (`CSP`, `X-Frame-Options`, `X-Content-Type-Options`), and `.githooks/pre-push` verification gate.
 
 ---
@@ -144,7 +142,6 @@ Defined in [`apps/server/src/seed.ts`](./apps/server/src/seed.ts) (can be reset 
 | `POST /api/bookings/:id/cancel` | Cancels an active `pending_payment` checkout (`status = 'cancelled'`).                                         |
 | `GET /api/rosters`              | Returns each class's verified `confirmed` roster (`<= 4`) and excluded non-roster attempts.                    |
 | `GET /api/bookings`             | Server-paginated booking and payment attempt history with configurable `limit` (default `100`) and filters.    |
-| `POST /api/simulator/run`       | Runs deterministic multi-step edge-case scenarios against the production `BookingEngine`.                      |
 | `POST /api/reset`               | Resets the in-memory store back to the initial deterministic seed snapshot.                                    |
 
 ### 5.3 Required Technical Scenario: Last-Seat Race Condition
