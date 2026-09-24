@@ -1,0 +1,26 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "trial-booking-dashboard",
+  "main": ".output/server/index.mjs",
+  "compatibility_date": "2025-04-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "account_id": "6d77e57de3a65164e5b56e716791b75a",
+  "workers_dev": false,
+  "assets": {
+    "directory": ".output/public",
+    "binding": "ASSETS",
+  },
+  "routes": [
+    {
+      "pattern": "trial-booking-reliability.irfankurniawan.com",
+      "custom_domain": true,
+    },
+  ],
+  "vars": {
+    "NUXT_PUBLIC_API_URL": "https://trial-booking-reliability.irfankurniawan.com",
+    "NUXT_PUBLIC_APP_URL": "https://trial-booking-reliability.irfankurniawan.com",
+  },
+  "observability": {
+    "enabled": true,
+  },
+}

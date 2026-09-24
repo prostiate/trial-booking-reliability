@@ -1,0 +1,22 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "trial-booking-server",
+  "main": "src/index.ts",
+  "compatibility_date": "2025-04-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "account_id": "6d77e57de3a65164e5b56e716791b75a",
+  "workers_dev": false,
+  "routes": [
+    {
+      "pattern": "trial-booking-reliability.irfankurniawan.com/api/*",
+      "zone_name": "irfankurniawan.com",
+    },
+  ],
+  "vars": {
+    "NODE_ENV": "production",
+    "CORS_ORIGINS": "https://trial-booking-reliability.irfankurniawan.com,http://localhost:24002",
+  },
+  "observability": {
+    "enabled": true,
+  },
+}

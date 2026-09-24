@@ -1,0 +1,34 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Build & Framework outputs
+dist/
+.nuxt/
+.output/
+.Nitro/
+.wrangler/
+.turbo/
+coverage/
+
+# Local private prompts & editor state
+docs/prompts/
+.claude/
+.lavish/
+skills-lock.json
+
+# Environment variables
+.env
+.env.*
+!.env.example
+!.env.production.example
+
+# Logs & OS
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.DS_Store
+Thumbs.db
