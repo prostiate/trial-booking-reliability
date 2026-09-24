@@ -50,6 +50,20 @@ async function fetchRosters() {
   }
 }
 
+function formatMillisecondTimestamp(iso: string | null | undefined): string {
+  if (!iso) return '-';
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return iso;
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  const hh = String(d.getHours()).padStart(2, '0');
+  const min = String(d.getMinutes()).padStart(2, '0');
+  const ss = String(d.getSeconds()).padStart(2, '0');
+  const sss = String(d.getMilliseconds()).padStart(3, '0');
+  return `${yyyy}-${mm}-${dd} ${hh}:${min}:${ss}.${sss}`;
+}
+
 async function handleCreateClass() {
   const parsed = CreateTrialClassInputSchema.safeParse(newClassForm);
   if (!parsed.success) return;
@@ -163,6 +177,7 @@ await useAsyncData('class-rosters', () => fetchRosters());
                   <th class="py-2 px-3">Seat</th>
                   <th class="py-2 px-3">Student</th>
                   <th class="py-2 px-3">Parent</th>
+                  <th class="py-2 px-3">Confirmed Timestamp</th>
                   <th class="py-2 px-3">Status</th>
                 </tr>
               </thead>
@@ -171,12 +186,15 @@ await useAsyncData('class-rosters', () => fetchRosters());
                   <td class="py-2 px-3 font-bold text-slate-900">Seat {{ row.seatNumber }}</td>
                   <td class="py-2 px-3 font-medium text-slate-900">{{ row.studentName }}</td>
                   <td class="py-2 px-3 text-slate-600">{{ row.parentName }}</td>
+                  <td class="py-2 px-3 font-mono text-[11px] text-slate-600">
+                    {{ formatMillisecondTimestamp(row.confirmedAt ?? row.updatedAt) }}
+                  </td>
                   <td class="py-2 px-3">
                     <BookingStatusBadge :status="row.status" />
                   </td>
                 </tr>
                 <tr v-if="group.confirmedRoster.length === 0">
-                  <td colspan="4" class="py-4 text-center text-slate-500">
+                  <td colspan="5" class="py-4 text-center text-slate-500">
                     No confirmed students yet.
                   </td>
                 </tr>
@@ -201,13 +219,16 @@ await useAsyncData('class-rosters', () => fetchRosters());
             <div
               v-for="attempt in group.nonRosterAttempts"
               :key="attempt.id"
-              class="p-2.5 rounded border border-slate-200 bg-slate-50 flex justify-between items-center gap-2 text-xs">
-              <div>
+              class="p-2.5 rounded border border-slate-200 bg-slate-50 flex justify-between items-start gap-2 text-xs">
+              <div class="space-y-0.5">
                 <div class="font-bold text-slate-900">
                   {{ attempt.studentName }} (Seat {{ attempt.seatNumber }})
                 </div>
-                <div class="font-mono text-[11px] text-slate-600">
+                <div class="font-mono text-[11px] text-slate-700">
                   {{ attempt.conflictReason || attempt.status }}
+                </div>
+                <div class="font-mono text-[11px] text-slate-500">
+                  {{ formatMillisecondTimestamp(attempt.updatedAt) }}
                 </div>
               </div>
               <BookingStatusBadge :status="attempt.status" />

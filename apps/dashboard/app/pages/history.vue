@@ -54,6 +54,20 @@ async function fetchHistory() {
   }
 }
 
+function formatMillisecondTimestamp(iso: string | null | undefined): string {
+  if (!iso) return '-';
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return iso;
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  const hh = String(d.getHours()).padStart(2, '0');
+  const min = String(d.getMinutes()).padStart(2, '0');
+  const ss = String(d.getSeconds()).padStart(2, '0');
+  const sss = String(d.getMilliseconds()).padStart(3, '0');
+  return `${yyyy}-${mm}-${dd} ${hh}:${min}:${ss}.${sss}`;
+}
+
 watch([page, limit, statusFilter, classFilter], () => {
   fetchHistory();
 });
@@ -138,7 +152,7 @@ await useAsyncData('booking-history', () => fetchHistory());
                 <span v-else class="text-slate-500">awaiting_payment</span>
               </td>
               <td class="py-2.5 px-3 font-mono text-slate-500">
-                {{ row.updatedAt.slice(11, 19) }}
+                {{ formatMillisecondTimestamp(row.updatedAt) }}
               </td>
             </tr>
           </tbody>
