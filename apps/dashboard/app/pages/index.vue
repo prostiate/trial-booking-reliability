@@ -42,7 +42,7 @@ const studentOptions = computed(() =>
   }))
 );
 
-async function handleAction(action: 'pay_success' | 'pay_fail' | 'hold_pending') {
+async function handleConfirmSeat() {
   const parsed = CreateCheckoutInputSchema.safeParse({
     parentId: bookingStore.selectedParentId,
     studentId: bookingStore.selectedStudentId,
@@ -50,7 +50,7 @@ async function handleAction(action: 'pay_success' | 'pay_fail' | 'hold_pending')
     seatNumber: bookingStore.selectedSeatNumber,
   });
   if (!parsed.success) return;
-  await bookingStore.submitBookingAction(action);
+  await bookingStore.submitBookingAction('hold_pending');
 }
 </script>
 
@@ -90,34 +90,19 @@ async function handleAction(action: 'pay_success' | 'pay_fail' | 'hold_pending')
           @update:selected-seat-number="(seat) => (bookingStore.selectedSeatNumber = seat)" />
 
         <UCard>
-          <div class="flex flex-wrap items-center gap-2.5">
+          <div class="flex items-center justify-between gap-3">
+            <span class="text-xs font-medium text-slate-600">
+              Selected Seat #{{ bookingStore.selectedSeatNumber }} ·
+              {{ bookingStore.selectedClass?.title }}
+            </span>
+
             <UButton
               color="primary"
               size="sm"
-              icon="i-lucide-credit-card"
+              icon="i-lucide-check-circle-2"
               :loading="bookingStore.isLoading"
-              @click="handleAction('pay_success')">
-              Pay &amp; Confirm (Rp 75.000)
-            </UButton>
-
-            <UButton
-              color="warning"
-              variant="subtle"
-              size="sm"
-              icon="i-lucide-clock"
-              :loading="bookingStore.isLoading"
-              @click="handleAction('hold_pending')">
-              Hold in Pending Checkout
-            </UButton>
-
-            <UButton
-              color="error"
-              variant="subtle"
-              size="sm"
-              icon="i-lucide-alert-circle"
-              :loading="bookingStore.isLoading"
-              @click="handleAction('pay_fail')">
-              Simulate Card Decline
+              @click="handleConfirmSeat">
+              Confirm Seat
             </UButton>
           </div>
         </UCard>
@@ -129,7 +114,8 @@ async function handleAction(action: 'pay_success' | 'pay_fail' | 'hold_pending')
         :pending-checkouts="bookingStore.pendingCheckouts"
         :last-outcome="bookingStore.lastOutcome"
         :is-loading="bookingStore.isLoading"
-        @complete-payment="(id) => bookingStore.completePendingPayment(id, 'success')" />
+        @complete-payment="(id, outcome) => bookingStore.completePendingPayment(id, outcome)"
+        @cancel-booking="(id) => bookingStore.cancelPendingBooking(id)" />
     </div>
   </div>
 </template>
