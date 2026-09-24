@@ -5,6 +5,7 @@ import {
   BookingPaginationQuerySchema,
   CheckoutAndPayInputSchema,
   CreateCheckoutInputSchema,
+  CreateTrialClassInputSchema,
   MAX_CLASS_CAPACITY,
   ProcessPaymentInputSchema,
   SimulatorRunInputSchema,
@@ -104,6 +105,11 @@ const app = new Hono()
       data: rosters,
     });
   })
+  .post('/api/classes', zValidator('json', CreateTrialClassInputSchema), async (c) => {
+    const input = c.req.valid('json');
+    const result = await engine.createTrialClass(input);
+    return c.json(result, result.httpStatus);
+  })
   .get('/api/bookings', zValidator('query', BookingPaginationQuerySchema), (c) => {
     const query = c.req.valid('query');
     const result = engine.listPaginatedBookings(query);
@@ -147,6 +153,11 @@ const app = new Hono()
     const bookingId = c.req.param('id');
     const input = c.req.valid('json');
     const result = await engine.processPayment(bookingId, input);
+    return c.json(result, result.httpStatus);
+  })
+  .post('/api/bookings/:id/cancel', async (c) => {
+    const bookingId = c.req.param('id');
+    const result = await engine.cancelBooking(bookingId);
     return c.json(result, result.httpStatus);
   })
   .post('/api/simulator/run', zValidator('json', SimulatorRunInputSchema), async (c) => {

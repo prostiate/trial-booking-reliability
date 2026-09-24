@@ -7,7 +7,7 @@ const api = useApiClient();
 const bookingStore = useBookingStore();
 
 const page = ref(1);
-const limit = ref(6);
+const limit = ref(100);
 const statusFilter = ref<string>('all');
 const classFilter = ref<string>('all');
 
@@ -24,6 +24,14 @@ const classOptions = computed(() => [
   { label: 'All Classes', value: 'all' },
   ...bookingStore.classes.map((c) => ({ label: c.title, value: c.id })),
 ]);
+
+const pageSizeOptions = [
+  { label: '10 / page', value: 10 },
+  { label: '25 / page', value: 25 },
+  { label: '50 / page', value: 50 },
+  { label: '100 / page', value: 100 },
+  { label: '200 / page', value: 200 },
+];
 
 async function fetchHistory() {
   if (bookingStore.classes.length === 0) {
@@ -46,7 +54,7 @@ async function fetchHistory() {
   }
 }
 
-watch([page, statusFilter, classFilter], () => {
+watch([page, limit, statusFilter, classFilter], () => {
   fetchHistory();
 });
 
@@ -75,6 +83,20 @@ await useAsyncData('booking-history', () => fetchHistory());
             size="xs"
             class="w-56"
             @update:model-value="page = 1" />
+
+          <USelect
+            :model-value="limit"
+            :items="pageSizeOptions"
+            value-key="value"
+            label-key="label"
+            size="xs"
+            class="w-32"
+            @update:model-value="
+              (v) => {
+                limit = Number(v);
+                page = 1;
+              }
+            " />
         </div>
 
         <span class="text-xs font-medium text-slate-600">

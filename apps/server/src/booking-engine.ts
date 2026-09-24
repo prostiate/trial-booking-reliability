@@ -1,18 +1,18 @@
 import {
   BOOKING_ERROR_CODES,
   MAX_CLASS_CAPACITY,
-  SEAT_NUMBERS,
   type BookingErrorCode,
   type BookingPaginationQuery,
   type BookingRecord,
   type ClassCatalogItem,
   type CreateCheckoutInput,
+  type CreateTrialClassInput,
   type EnrichedBooking,
   type PaymentAttempt,
   type ProcessPaymentInput,
-  type SeatSlotState,
 } from '@trial-booking/shared';
 import { InMemoryBookingStore } from './store';
+import { CatalogService } from './catalog-service';
 
 export interface EngineResult<T> {
   ok: boolean;
@@ -23,68 +23,26 @@ export interface EngineResult<T> {
 }
 
 export class BookingEngine {
-  constructor(private readonly store: InMemoryBookingStore) {}
+  private readonly catalog: CatalogService;
+
+  constructor(private readonly store: InMemoryBookingStore) {
+    this.catalog = new CatalogService(store);
+  }
 
   public enrichBooking(booking: BookingRecord): EnrichedBooking {
-    const parent = this.store.parents.get(booking.parentId);
-    const student = this.store.students.get(booking.studentId);
-    const trialClass = this.store.trialClasses.get(booking.trialClassId);
-    const attempts = Array.from(this.store.paymentAttempts.values())
-      .filter((a) => a.bookingId === booking.id)
-      .sort((a, b) => a.createdAt.localeCompare(b.createdAt));
-
-    return {
-      ...booking,
-      parentName: parent?.name ?? 'Unknown Parent',
-      parentEmail: parent?.email ?? 'unknown@example.com',
-      studentName: student?.name ?? 'Unknown Student',
-      studentGrade: student?.gradeLevel ?? 'Grade 4',
-      classTitle: trialClass?.title ?? 'Unknown Class',
-      classSubject: trialClass?.subject ?? 'Math',
-      teacherName: trialClass?.teacherName ?? 'Unknown Teacher',
-      scheduledAt: trialClass?.scheduledAt ?? '',
-      priceIdr: trialClass?.priceIdr ?? 75000,
-      paymentAttempts: attempts,
-    };
+    return this.catalog.enrichBooking(booking);
   }
 
   public getClassCatalog(): ClassCatalogItem[] {
-    const allBookings = Array.from(this.store.bookings.values());
-    return Array.from(this.store.trialClasses.values()).map((cls) => {
-      const classBookings = allBookings.filter((b) => b.trialClassId === cls.id);
-      const confirmedBookings = classBookings.filter((b) => b.status === 'confirmed');
-      const pendingBookings = classBookings.filter((b) => b.status === 'pending_payment');
+    return this.catalog.getClassCatalog();
+  }
 
-      const seats: SeatSlotState[] = SEAT_NUMBERS.map((seatNumber) => {
-        const confirmed = confirmedBookings.find((b) => b.seatNumber === seatNumber);
-        const confirmedStudent = confirmed
-          ? (this.store.students.get(confirmed.studentId)?.name ?? null)
-          : null;
-        const pendingForSeat = pendingBookings.filter((b) => b.seatNumber === seatNumber);
-        const pendingNames = pendingForSeat.map(
-          (b) => this.store.students.get(b.studentId)?.name ?? 'Student'
-        );
+  public createTrialClass(input: CreateTrialClassInput): Promise<EngineResult<ClassCatalogItem>> {
+    return this.catalog.createTrialClass(input);
+  }
 
-        return {
-          seatNumber,
-          isConfirmed: Boolean(confirmed),
-          confirmedStudentName: confirmedStudent,
-          confirmedBookingId: confirmed?.id ?? null,
-          pendingCheckoutCount: pendingForSeat.length,
-          pendingStudentNames: pendingNames,
-        };
-      });
-
-      const confirmedCount = confirmedBookings.length;
-      return {
-        ...cls,
-        confirmedCount,
-        availableSeatsCount: Math.max(0, cls.maxCapacity - confirmedCount),
-        pendingCount: pendingBookings.length,
-        isFull: confirmedCount >= cls.maxCapacity,
-        seats,
-      };
-    });
+  public listPaginatedBookings(query: BookingPaginationQuery) {
+    return this.catalog.listPaginatedBookings(query);
   }
 
   public async createCheckoutIntent(
@@ -109,7 +67,6 @@ export class BookingEngine {
         return {
           ok: false,
           httpStatus: 400,
-          errorStatus: 400,
           errorCode: BOOKING_ERROR_CODES.STUDENT_PARENT_MISMATCH,
           message: `${student.name} does not belong to parent account ${parent.name}.`,
           data: null,
@@ -157,7 +114,6 @@ export class BookingEngine {
         };
       }
 
-      // Reuse an existing pending_payment checkout for the exact same child + class + seat if present
       const existingPending = allBookings.find(
         (b) =>
           b.studentId === student.id &&
@@ -196,8 +152,47 @@ export class BookingEngine {
         ok: true,
         httpStatus: 201,
         errorCode: null,
-        message: `Checkout created in pending_payment for ${student.name} (Seat #${input.seatNumber}).`,
+        message: `Seat #${input.seatNumber} added to Pending Checkouts for ${student.name}.`,
         data: this.enrichBooking(newBooking),
+      };
+    });
+  }
+
+  public async cancelBooking(bookingId: string): Promise<EngineResult<EnrichedBooking>> {
+    return this.store.runAtomic(() => {
+      const booking = this.store.bookings.get(bookingId);
+      if (!booking) {
+        return {
+          ok: false,
+          httpStatus: 404,
+          errorCode: BOOKING_ERROR_CODES.BOOKING_NOT_FOUND,
+          message: `Booking ${bookingId} was not found.`,
+          data: null,
+        };
+      }
+
+      if (booking.status === 'confirmed') {
+        return {
+          ok: false,
+          httpStatus: 409,
+          errorCode: BOOKING_ERROR_CODES.BOOKING_ALREADY_FINALIZED,
+          message: `Booking ${booking.id} is already confirmed and cannot be cancelled from pending checkout.`,
+          data: this.enrichBooking(booking),
+        };
+      }
+
+      const student = this.store.students.get(booking.studentId);
+      const now = new Date().toISOString();
+      booking.status = 'cancelled';
+      booking.version += 1;
+      booking.updatedAt = now;
+
+      return {
+        ok: true,
+        httpStatus: 200,
+        errorCode: null,
+        message: `Pending checkout for ${student?.name ?? 'Student'} (Seat #${booking.seatNumber}) has been cancelled.`,
+        data: this.enrichBooking(booking),
       };
     });
   }
@@ -233,7 +228,6 @@ export class BookingEngine {
       const now = new Date().toISOString();
       const allBookings = Array.from(this.store.bookings.values());
 
-      // Invariant 1: Duplicate confirmed booking check for same student + class
       const existingDuplicate = allBookings.find(
         (b) =>
           b.id !== booking.id &&
@@ -269,7 +263,6 @@ export class BookingEngine {
         };
       }
 
-      // Invariant 2: Last-seat race & 4-student class capacity critical section check
       const confirmedInClass = allBookings.filter(
         (b) => b.trialClassId === booking.trialClassId && b.status === 'confirmed'
       );
@@ -308,7 +301,6 @@ export class BookingEngine {
         };
       }
 
-      // Invariant 3: Payment failure must NOT add student to confirmed roster
       if (input.paymentOutcome === 'fail' || input.paymentMethod === 'card_declined_0002') {
         booking.status = 'payment_failed';
         booking.conflictReason = BOOKING_ERROR_CODES.PAYMENT_DECLINED;
@@ -336,7 +328,6 @@ export class BookingEngine {
         };
       }
 
-      // Payment Succeeded + Capacity & Seat Verified -> Confirm Booking
       booking.status = 'confirmed';
       booking.conflictReason = null;
       booking.conflictingBookingId = null;
@@ -364,33 +355,5 @@ export class BookingEngine {
         data: this.enrichBooking(booking),
       };
     });
-  }
-
-  public listPaginatedBookings(query: BookingPaginationQuery) {
-    const allEnriched = Array.from(this.store.bookings.values())
-      .map((b) => this.enrichBooking(b))
-      .filter((b) => {
-        if (query.status !== 'all' && b.status !== query.status) return false;
-        if (query.trialClassId !== 'all' && b.trialClassId !== query.trialClassId) return false;
-        if (query.parentId !== 'all' && b.parentId !== query.parentId) return false;
-        return true;
-      })
-      .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
-
-    const total = allEnriched.length;
-    const totalPages = Math.max(1, Math.ceil(total / query.limit));
-    const safePage = Math.min(query.page, totalPages);
-    const startIndex = (safePage - 1) * query.limit;
-    const items = allEnriched.slice(startIndex, startIndex + query.limit);
-
-    return {
-      items,
-      pagination: {
-        page: safePage,
-        limit: query.limit,
-        total,
-        totalPages,
-      },
-    };
   }
 }

@@ -229,4 +229,34 @@ describe('Ottodot Trial Booking Reliability & Concurrency Suite', () => {
 
     expect(responses).toContain(429);
   });
+
+  it('creates a new trial class with 4 seats and cancels a pending checkout cleanly', async () => {
+    const createRes = await engine.createTrialClass({
+      title: 'Astronomy & Solar System Lab',
+      subject: 'Science',
+      gradeRange: 'Grade 4-5',
+      teacherName: 'Kak Rina Putri',
+      scheduledAt: '2026-10-01T10:00:00.000Z',
+      durationMinutes: 45,
+      priceIdr: 85000,
+    });
+    expect(createRes.ok).toBe(true);
+    expect(createRes.httpStatus).toBe(201);
+    expect(createRes.data?.maxCapacity).toBe(MAX_CLASS_CAPACITY);
+    expect(createRes.data?.availableSeatsCount).toBe(MAX_CLASS_CAPACITY);
+
+    const checkout = await engine.createCheckoutIntent({
+      parentId: 'par-siti',
+      studentId: 'stu-arka',
+      trialClassId: createRes.data!.id,
+      seatNumber: 1,
+    });
+    expect(checkout.ok).toBe(true);
+    expect(checkout.data?.status).toBe('pending_payment');
+
+    const cancelRes = await engine.cancelBooking(checkout.data!.id);
+    expect(cancelRes.ok).toBe(true);
+    expect(cancelRes.httpStatus).toBe(200);
+    expect(cancelRes.data?.status).toBe('cancelled');
+  });
 });

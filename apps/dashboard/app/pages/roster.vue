@@ -1,6 +1,12 @@
 <script setup lang="ts">
-import type { ClassCatalogItem, EnrichedBooking } from '@trial-booking/shared';
+import {
+  CreateTrialClassInputSchema,
+  type ClassCatalogItem,
+  type CreateTrialClassInput,
+  type EnrichedBooking,
+} from '@trial-booking/shared';
 import { useApiClient } from '~/composables/useApiClient';
+import { useBookingStore } from '~/stores/booking';
 
 interface ClassRosterGroup {
   trialClass: ClassCatalogItem;
@@ -11,8 +17,25 @@ interface ClassRosterGroup {
 }
 
 const api = useApiClient();
+const bookingStore = useBookingStore();
 const rosters = ref<ClassRosterGroup[]>([]);
 const isLoading = ref(false);
+const showAddClass = ref(false);
+
+const newClassForm = reactive<CreateTrialClassInput>({
+  title: 'Robotics & Sensors Lab',
+  subject: 'Science',
+  gradeRange: 'Grade 4-5',
+  teacherName: 'Kak Rina Putri',
+  scheduledAt: '2026-10-01T10:00:00.000Z',
+  durationMinutes: 45,
+  priceIdr: 75000,
+});
+
+const subjectOptions = [
+  { label: 'Math', value: 'Math' },
+  { label: 'Science', value: 'Science' },
+];
 
 async function fetchRosters() {
   isLoading.value = true;
@@ -27,11 +50,88 @@ async function fetchRosters() {
   }
 }
 
+async function handleCreateClass() {
+  const parsed = CreateTrialClassInputSchema.safeParse(newClassForm);
+  if (!parsed.success) return;
+  const res = await bookingStore.createTrialClass(parsed.data);
+  if (res.ok) {
+    showAddClass.value = false;
+    await fetchRosters();
+  }
+}
+
 await useAsyncData('class-rosters', () => fetchRosters());
 </script>
 
 <template>
-  <div class="space-y-5">
+  <div class="space-y-4">
+    <div class="flex items-center justify-between">
+      <span class="text-xs font-bold text-slate-900">
+        Live Class Rosters ({{ rosters.length }} Classes · Max 4 Confirmed Students/Class)
+      </span>
+      <UButton
+        color="primary"
+        size="xs"
+        :icon="showAddClass ? 'i-lucide-x' : 'i-lucide-plus'"
+        @click="showAddClass = !showAddClass">
+        {{ showAddClass ? 'Close' : 'Add Class' }}
+      </UButton>
+    </div>
+
+    <UCard v-if="showAddClass">
+      <UForm
+        :schema="CreateTrialClassInputSchema"
+        :state="newClassForm"
+        class="space-y-3"
+        @submit="handleCreateClass">
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <UFormField label="Class Title" name="title">
+            <UInput v-model="newClassForm.title" size="xs" class="w-full" />
+          </UFormField>
+
+          <UFormField label="Subject" name="subject">
+            <USelect
+              v-model="newClassForm.subject"
+              :items="subjectOptions"
+              value-key="value"
+              label-key="label"
+              size="xs"
+              class="w-full" />
+          </UFormField>
+
+          <UFormField label="Grade Range" name="gradeRange">
+            <UInput v-model="newClassForm.gradeRange" size="xs" class="w-full" />
+          </UFormField>
+
+          <UFormField label="Teacher Name" name="teacherName">
+            <UInput v-model="newClassForm.teacherName" size="xs" class="w-full" />
+          </UFormField>
+
+          <UFormField label="Schedule (ISO)" name="scheduledAt">
+            <UInput v-model="newClassForm.scheduledAt" size="xs" class="w-full" />
+          </UFormField>
+
+          <UFormField label="Price (IDR)" name="priceIdr">
+            <UInput v-model.number="newClassForm.priceIdr" type="number" size="xs" class="w-full" />
+          </UFormField>
+        </div>
+
+        <div class="flex justify-end gap-2">
+          <UButton color="neutral" variant="subtle" size="xs" @click="showAddClass = false">
+            Cancel
+          </UButton>
+          <UButton
+            type="submit"
+            color="primary"
+            size="xs"
+            icon="i-lucide-check"
+            :loading="bookingStore.isLoading">
+            Save Class
+          </UButton>
+        </div>
+      </UForm>
+    </UCard>
+
     <div
       v-for="group in rosters"
       :key="group.trialClass.id"

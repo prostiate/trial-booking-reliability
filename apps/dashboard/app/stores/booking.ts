@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia';
 import type {
   ClassCatalogItem,
+  CreateTrialClassInput,
   EnrichedBooking,
   Parent,
   SeatNumber,
@@ -129,6 +130,41 @@ export const useBookingStore = defineStore('booking', () => {
     }
   }
 
+  async function cancelPendingBooking(bookingId: string) {
+    isLoading.value = true;
+    try {
+      const res = await api.api.bookings[':id'].cancel.$post({
+        param: { id: bookingId },
+      });
+      const body = await res.json();
+      lastOutcome.value = {
+        ok: body.ok,
+        httpStatus: res.status,
+        errorCode: body.errorCode,
+        message: body.message,
+        booking: body.data,
+      };
+      await fetchCatalog();
+      return lastOutcome.value;
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+  async function createTrialClass(input: CreateTrialClassInput) {
+    isLoading.value = true;
+    try {
+      const res = await api.api.classes.$post({
+        json: input,
+      });
+      const body = await res.json();
+      await fetchCatalog();
+      return body;
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
   async function resetStoreData() {
     isLoading.value = true;
     try {
@@ -160,6 +196,8 @@ export const useBookingStore = defineStore('booking', () => {
     fetchCatalog,
     submitBookingAction,
     completePendingPayment,
+    cancelPendingBooking,
+    createTrialClass,
     resetStoreData,
   };
 });
