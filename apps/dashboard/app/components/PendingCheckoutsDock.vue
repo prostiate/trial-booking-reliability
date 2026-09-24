@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { EnrichedBooking } from '@trial-booking/shared';
+import { formatMillisecondTimestamp } from '~/utils/date';
 
 defineProps<{
   selectedClassTitle: string;
@@ -22,20 +23,6 @@ function getOutcome(bookingId: string): 'success' | 'fail' {
 
 function setOutcome(bookingId: string, value: string) {
   selectedOutcomeByBooking[bookingId] = value === 'fail' ? 'fail' : 'success';
-}
-
-function formatMillisecondTimestamp(iso: string): string {
-  if (!iso) return '';
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return iso;
-  const yyyy = d.getFullYear();
-  const mm = String(d.getMonth() + 1).padStart(2, '0');
-  const dd = String(d.getDate()).padStart(2, '0');
-  const hh = String(d.getHours()).padStart(2, '0');
-  const min = String(d.getMinutes()).padStart(2, '0');
-  const ss = String(d.getSeconds()).padStart(2, '0');
-  const sss = String(d.getMilliseconds()).padStart(3, '0');
-  return `${yyyy}-${mm}-${dd} ${hh}:${min}:${ss}.${sss}`;
 }
 
 const cardOptions = [
@@ -96,9 +83,9 @@ const cardOptions = [
           <BookingStatusBadge :status="item.status" />
         </div>
 
-        <div class="flex items-center justify-between text-[11px] font-mono text-slate-600">
+        <div class="flex items-center justify-between text-[11px] tabular-nums text-slate-600">
           <span>Hold: {{ formatMillisecondTimestamp(item.createdAt) }}</span>
-          <span class="font-sans font-semibold text-slate-800">
+          <span class="font-semibold text-slate-800">
             Rp {{ item.priceIdr.toLocaleString('id-ID') }}
           </span>
         </div>

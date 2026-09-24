@@ -2,6 +2,7 @@
 import { CreateCheckoutInputSchema, type SeatNumber } from '@trial-booking/shared';
 import { useAutoStagePresets } from '~/composables/useAutoStagePresets';
 import { useBookingStore } from '~/stores/booking';
+import { formatMillisecondTimestamp } from '~/utils/date';
 
 const bookingStore = useBookingStore();
 const { stageRandomChild, stageSameSeatRace, stageDuplicateChild, stageOverbookCapacity } =
@@ -45,20 +46,6 @@ const studentOptions = computed(() =>
   }))
 );
 
-function formatMillisecondTimestamp(iso: string): string {
-  if (!iso) return '';
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return iso;
-  const yyyy = d.getFullYear();
-  const mm = String(d.getMonth() + 1).padStart(2, '0');
-  const dd = String(d.getDate()).padStart(2, '0');
-  const hh = String(d.getHours()).padStart(2, '0');
-  const min = String(d.getMinutes()).padStart(2, '0');
-  const ss = String(d.getSeconds()).padStart(2, '0');
-  const sss = String(d.getMilliseconds()).padStart(3, '0');
-  return `${yyyy}-${mm}-${dd} ${hh}:${min}:${ss}.${sss}`;
-}
-
 async function handleConfirmSeat() {
   const parsed = CreateCheckoutInputSchema.safeParse({
     parentId: bookingStore.selectedParentId,
@@ -96,7 +83,7 @@ async function handleConfirmSeat() {
                   (bookingStore.lastOutcome.ok ? 'OK' : 'ERROR')
                 }}
               </UBadge>
-              <span class="text-xs font-mono font-semibold text-slate-700">
+              <span class="text-xs tabular-nums font-semibold text-slate-700">
                 Executed: {{ formatMillisecondTimestamp(bookingStore.lastOutcome.executedAt) }}
               </span>
             </div>
@@ -120,7 +107,7 @@ async function handleConfirmSeat() {
                     HTTP {{ item.httpStatus }} · {{ item.errorCode ?? item.status.toUpperCase() }}
                   </UBadge>
                 </div>
-                <div class="font-mono text-[11px] text-slate-600">
+                <div class="tabular-nums text-[11px] text-slate-600">
                   Hold Created: {{ formatMillisecondTimestamp(item.holdCreatedAt) }} · Payment
                   Executed: {{ formatMillisecondTimestamp(item.paymentExecutedAt) }}
                 </div>

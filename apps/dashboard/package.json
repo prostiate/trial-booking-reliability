@@ -21,6 +21,7 @@
     "@trial-booking/shared": "workspace:*",
     "@vueuse/core": "^14.4.0",
     "@vueuse/nuxt": "^14.4.0",
+    "date-fns": "^4.4.0",
     "nuxt": "^4.5.2",
     "pinia": "^3.0.4",
     "tailwindcss": "^4.3.3",
