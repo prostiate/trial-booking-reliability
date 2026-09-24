@@ -4,6 +4,7 @@
   "main": ".output/server/index.mjs",
   "compatibility_date": "2025-04-01",
   "compatibility_flags": ["nodejs_compat"],
+  "account_id": "6d77e57de3a65164e5b56e716791b75a",
   "assets": {
     "directory": ".output/public",
     "binding": "ASSETS",
