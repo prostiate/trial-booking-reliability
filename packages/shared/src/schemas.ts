@@ -130,9 +130,20 @@ export const CheckoutAndPayInputSchema = CreateCheckoutInputSchema.extend({
 });
 export type CheckoutAndPayInput = z.infer<typeof CheckoutAndPayInputSchema>;
 
+export const CreateTrialClassInputSchema = z.object({
+  title: z.string().min(3, 'Class title must be at least 3 characters'),
+  subject: z.enum(['Math', 'Science']),
+  gradeRange: z.string().min(1, 'Grade range is required'),
+  teacherName: z.string().min(2, 'Teacher name is required'),
+  scheduledAt: z.string().min(1, 'Schedule time is required'),
+  durationMinutes: z.coerce.number().int().min(15).max(180).default(45),
+  priceIdr: z.coerce.number().int().min(0).default(75000),
+});
+export type CreateTrialClassInput = z.infer<typeof CreateTrialClassInputSchema>;
+
 export const BookingPaginationQuerySchema = z.object({
   page: z.coerce.number().int().min(1).default(1),
-  limit: z.coerce.number().int().min(1).max(50).default(6),
+  limit: z.coerce.number().int().min(1).max(200).default(100),
   status: z.enum(['all', ...BOOKING_STATUSES]).default('all'),
   trialClassId: z.string().default('all'),
   parentId: z.string().default('all'),

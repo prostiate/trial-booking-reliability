@@ -192,8 +192,8 @@ export function createInitialSeedSnapshot(): SeedSnapshot {
       conflictReason: null,
       conflictingBookingId: null,
       version: 1,
-      createdAt: '2026-09-24T09:00:00.000Z',
-      updatedAt: '2026-09-24T09:00:00.000Z',
+      createdAt: '2026-09-24T09:00:00.418Z',
+      updatedAt: '2026-09-24T09:00:00.418Z',
       confirmedAt: null,
     },
     // Class 2: Planetary Orbits & Gravity Physics — 1/4 confirmed + 1 payment_failed

@@ -8,7 +8,6 @@ const navItems = [
   { label: '1. Book Trial', to: '/' },
   { label: '2. Class Roster', to: '/roster' },
   { label: '3. History', to: '/history' },
-  { label: '4. Simulator', to: '/simulator' },
 ];
 
 async function handleReset() {

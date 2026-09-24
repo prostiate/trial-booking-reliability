@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia';
 import type {
   ClassCatalogItem,
+  CreateTrialClassInput,
   EnrichedBooking,
   Parent,
   SeatNumber,
@@ -8,12 +9,27 @@ import type {
 } from '@trial-booking/shared';
 import { useApiClient } from '~/composables/useApiClient';
 
+export interface BatchOutcomeItem {
+  bookingId: string;
+  studentName: string;
+  seatNumber: number;
+  holdCreatedAt: string;
+  paymentExecutedAt: string;
+  ok: boolean;
+  httpStatus: number;
+  errorCode: string | null;
+  status: string;
+  message: string;
+}
+
 export interface OutcomeNotice {
   ok: boolean;
   httpStatus: number;
   errorCode: string | null;
   message: string;
+  executedAt: string;
   booking: EnrichedBooking | null;
+  batchItems?: BatchOutcomeItem[];
 }
 
 export const useBookingStore = defineStore('booking', () => {
@@ -37,6 +53,15 @@ export const useBookingStore = defineStore('booking', () => {
 
   const selectedClass = computed(
     () => classes.value.find((c) => c.id === selectedClassId.value) ?? null
+  );
+
+  const selectedClassPendingCheckouts = computed(() =>
+    pendingCheckouts.value
+      .filter((b) => b.trialClassId === selectedClassId.value)
+      .sort((a, b) => {
+        const cmp = b.createdAt.localeCompare(a.createdAt);
+        return cmp !== 0 ? cmp : b.id.localeCompare(a.id);
+      })
   );
 
   watch(selectedParentId, (newParentId) => {
@@ -92,6 +117,7 @@ export const useBookingStore = defineStore('booking', () => {
         httpStatus: res.status,
         errorCode: body.errorCode,
         message: body.message,
+        executedAt: body.data?.updatedAt ?? new Date().toISOString(),
         booking: body.data,
       };
       await fetchCatalog();
@@ -115,15 +141,155 @@ export const useBookingStore = defineStore('booking', () => {
         },
       });
       const body = await res.json();
+      const latestAttempt =
+        body.data?.paymentAttempts?.[body.data.paymentAttempts.length - 1] ?? null;
       lastOutcome.value = {
         ok: body.ok,
         httpStatus: res.status,
         errorCode: body.errorCode,
         message: body.message,
+        executedAt: latestAttempt?.createdAt ?? body.data?.updatedAt ?? new Date().toISOString(),
         booking: body.data,
       };
       await fetchCatalog();
       return lastOutcome.value;
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+  async function cancelPendingBooking(bookingId: string) {
+    isLoading.value = true;
+    try {
+      const res = await api.api.bookings[':id'].cancel.$post({
+        param: { id: bookingId },
+      });
+      const body = await res.json();
+      lastOutcome.value = {
+        ok: body.ok,
+        httpStatus: res.status,
+        errorCode: body.errorCode,
+        message: body.message,
+        executedAt: body.data?.updatedAt ?? new Date().toISOString(),
+        booking: body.data,
+      };
+      await fetchCatalog();
+      return lastOutcome.value;
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+  async function payAllPendingForSelectedClass(
+    outcomesByBookingId: Record<string, 'success' | 'fail'> = {}
+  ) {
+    const targets = [...selectedClassPendingCheckouts.value];
+    if (targets.length === 0) return null;
+
+    isLoading.value = true;
+    try {
+      const results = await Promise.all(
+        targets.map(async (item) => {
+          const outcome = outcomesByBookingId[item.id] ?? 'success';
+          const res = await api.api.bookings[':id'].pay.$post({
+            param: { id: item.id },
+            json: {
+              paymentOutcome: outcome,
+              paymentMethod: outcome === 'success' ? 'card_visa_4242' : 'card_declined_0002',
+            },
+          });
+          const body = await res.json();
+          const latestAttempt =
+            body.data?.paymentAttempts?.[body.data.paymentAttempts.length - 1] ?? null;
+          return {
+            bookingId: item.id,
+            studentName: item.studentName,
+            seatNumber: item.seatNumber,
+            holdCreatedAt: item.createdAt,
+            paymentExecutedAt:
+              latestAttempt?.createdAt ?? body.data?.updatedAt ?? new Date().toISOString(),
+            ok: body.ok,
+            httpStatus: res.status,
+            errorCode: body.errorCode,
+            status: body.data?.status ?? 'unknown',
+            message: body.message,
+            data: body.data,
+          };
+        })
+      );
+
+      if (results.length === 1 && results[0]) {
+        lastOutcome.value = {
+          ok: results[0].ok,
+          httpStatus: results[0].httpStatus,
+          errorCode: results[0].errorCode,
+          message: results[0].message,
+          executedAt: results[0].paymentExecutedAt,
+          booking: results[0].data,
+        };
+      } else {
+        const confirmedCount = results.filter((r) => r.ok).length;
+        const rejectedCount = results.length - confirmedCount;
+        lastOutcome.value = {
+          ok: rejectedCount === 0,
+          httpStatus: rejectedCount === 0 ? 200 : 409,
+          errorCode:
+            rejectedCount === 0
+              ? null
+              : (results.find((r) => !r.ok)?.errorCode ?? 'LAST_SEAT_RACE_LOST'),
+          message: `Concurrent Pay All executed at real-time (${results.length} requests via Promise.all): ${confirmedCount} confirmed, ${rejectedCount} rejected/failed.`,
+          executedAt: new Date().toISOString(),
+          booking: results[0]?.data ?? null,
+          batchItems: results.map(({ data: _data, ...rest }) => rest),
+        };
+      }
+
+      await fetchCatalog();
+      return lastOutcome.value;
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+  async function cancelAllPendingForSelectedClass() {
+    const targets = [...selectedClassPendingCheckouts.value];
+    if (targets.length === 0) return null;
+
+    isLoading.value = true;
+    try {
+      const results = await Promise.all(
+        targets.map(async (item) => {
+          const res = await api.api.bookings[':id'].cancel.$post({
+            param: { id: item.id },
+          });
+          return res.json();
+        })
+      );
+
+      lastOutcome.value = {
+        ok: true,
+        httpStatus: 200,
+        errorCode: null,
+        message: `Cancelled all ${results.length} pending checkout(s) for ${selectedClass.value?.title ?? 'selected class'}.`,
+        executedAt: new Date().toISOString(),
+        booking: null,
+      };
+      await fetchCatalog();
+      return lastOutcome.value;
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+  async function createTrialClass(input: CreateTrialClassInput) {
+    isLoading.value = true;
+    try {
+      const res = await api.api.classes.$post({
+        json: input,
+      });
+      const body = await res.json();
+      await fetchCatalog();
+      return body;
     } finally {
       isLoading.value = false;
     }
@@ -149,6 +315,7 @@ export const useBookingStore = defineStore('booking', () => {
     students,
     classes,
     pendingCheckouts,
+    selectedClassPendingCheckouts,
     isLoading,
     lastOutcome,
     selectedParentId,
@@ -160,6 +327,10 @@ export const useBookingStore = defineStore('booking', () => {
     fetchCatalog,
     submitBookingAction,
     completePendingPayment,
+    cancelPendingBooking,
+    payAllPendingForSelectedClass,
+    cancelAllPendingForSelectedClass,
+    createTrialClass,
     resetStoreData,
   };
 });

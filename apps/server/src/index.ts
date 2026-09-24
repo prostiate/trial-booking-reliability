@@ -5,18 +5,16 @@ import {
   BookingPaginationQuerySchema,
   CheckoutAndPayInputSchema,
   CreateCheckoutInputSchema,
+  CreateTrialClassInputSchema,
   MAX_CLASS_CAPACITY,
   ProcessPaymentInputSchema,
-  SimulatorRunInputSchema,
 } from '@trial-booking/shared';
 import { bookingStore } from './store';
 import { BookingEngine } from './booking-engine';
-import { SimulatorEngine } from './simulator-engine';
 import { createRateLimiter } from './middleware/rate-limit';
 import { securityHeadersMiddleware } from './middleware/security';
 
 export const engine = new BookingEngine(bookingStore);
-export const simulator = new SimulatorEngine(bookingStore, engine);
 
 const app = new Hono()
   .use('*', securityHeadersMiddleware())
@@ -63,7 +61,10 @@ const app = new Hono()
     const pendingCheckouts = Array.from(bookingStore.bookings.values())
       .filter((b) => b.status === 'pending_payment')
       .map((b) => engine.enrichBooking(b))
-      .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+      .sort((a, b) => {
+        const cmp = b.createdAt.localeCompare(a.createdAt);
+        return cmp !== 0 ? cmp : b.id.localeCompare(a.id);
+      });
 
     return c.json({
       ok: true,
@@ -103,6 +104,11 @@ const app = new Hono()
       ok: true,
       data: rosters,
     });
+  })
+  .post('/api/classes', zValidator('json', CreateTrialClassInputSchema), async (c) => {
+    const input = c.req.valid('json');
+    const result = await engine.createTrialClass(input);
+    return c.json(result, result.httpStatus);
   })
   .get('/api/bookings', zValidator('query', BookingPaginationQuerySchema), (c) => {
     const query = c.req.valid('query');
@@ -149,13 +155,10 @@ const app = new Hono()
     const result = await engine.processPayment(bookingId, input);
     return c.json(result, result.httpStatus);
   })
-  .post('/api/simulator/run', zValidator('json', SimulatorRunInputSchema), async (c) => {
-    const input = c.req.valid('json');
-    const simResult = await simulator.runScenario(input.scenario, input.resetBeforeRun);
-    return c.json({
-      ok: true,
-      data: simResult,
-    });
+  .post('/api/bookings/:id/cancel', async (c) => {
+    const bookingId = c.req.param('id');
+    const result = await engine.cancelBooking(bookingId);
+    return c.json(result, result.httpStatus);
   })
   .post('/api/reset', (c) => {
     bookingStore.resetToSeed();

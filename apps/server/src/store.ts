@@ -46,7 +46,7 @@ export class InMemoryBookingStore {
     }
   }
 
-  public nextId(prefix: 'bkg' | 'pay'): string {
+  public nextId(prefix: 'bkg' | 'pay' | 'cls'): string {
     this.sequenceCounter += 1;
     return `${prefix}-${this.sequenceCounter}`;
   }
