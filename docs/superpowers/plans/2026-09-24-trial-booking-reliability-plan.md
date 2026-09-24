@@ -22,6 +22,7 @@
 ### Task 1: Workspace Foundation, Coding Standards (`AGENTS.md`), Linting & Pre-Push Gate
 
 **Files:**
+
 - Create: `package.json`, `pnpm-workspace.yaml`, `turbo.json`, `.prettierrc`, `.prettierignore`, `eslint.config.mjs`, `.githooks/pre-push`, `AGENTS.md`
 
 - [ ] **Step 1:** Write root workspace files and configure `.githooks/pre-push` executable hook.
@@ -32,6 +33,7 @@
 ### Task 2: Shared Domain Schemas & Booking State Machine Contracts (`@trial-booking/shared`)
 
 **Files:**
+
 - Create: `packages/shared/package.json`, `packages/shared/tsconfig.json`, `packages/shared/src/index.ts`, `packages/shared/src/schemas.ts`, `packages/shared/src/constants.ts`
 
 - [ ] **Step 1:** Implement Zod schemas for `Parent`, `Student`, `TrialClass`, `BookingRecord`, `PaymentAttempt`, `BookingStatus`, `CheckoutInput`, `ProcessPaymentInput`, `PaginationQuery`, and `SimulatorScenario`.
@@ -42,6 +44,7 @@
 ### Task 3: Hono Backend Engine, Rate Limiter, Seeder & Concurrency Tests (`@trial-booking/server`)
 
 **Files:**
+
 - Create: `apps/server/package.json`, `apps/server/tsconfig.json`, `apps/server/wrangler.jsonc`, `apps/server/src/store.ts`, `apps/server/src/seed.ts`, `apps/server/src/booking-engine.ts`, `apps/server/src/middleware/security.ts`, `apps/server/src/middleware/rate-limit.ts`, `apps/server/src/index.ts`, `apps/server/src/dev-server.ts`, `apps/server/tests/booking-reliability.test.ts`
 
 - [ ] **Step 1:** Write comprehensive Vitest test suite covering normal checkout, duplicate child+class rejection, >4 overbooking prevention, payment failure isolation, and the Last-Seat Race scenario (2-way and 10-way concurrent race).
@@ -54,6 +57,7 @@
 ### Task 4: Typed Hono RPC Client (`@trial-booking/api-client`)
 
 **Files:**
+
 - Create: `packages/api-client/package.json`, `packages/api-client/tsconfig.json`, `packages/api-client/src/index.ts`
 
 - [ ] **Step 1:** Create `hc<AppType>` client wrapper and export typed RPC helpers.
@@ -64,6 +68,7 @@
 ### Task 5: Production Nuxt UI v4 Dashboard (`@trial-booking/dashboard`)
 
 **Files:**
+
 - Create: `apps/dashboard/package.json`, `apps/dashboard/tsconfig.json`, `apps/dashboard/nuxt.config.ts`, `apps/dashboard/wrangler.jsonc`, `apps/dashboard/eslint.config.mjs`, `apps/dashboard/app/assets/css/main.css`, `apps/dashboard/app/stores/booking.ts`, `apps/dashboard/app/layouts/default.vue`, `apps/dashboard/app/components/PageHeader.vue`, `apps/dashboard/app/components/BookingStatusBadge.vue`, `apps/dashboard/app/components/ClassroomSeatPicker.vue`, `apps/dashboard/app/components/ActivePendingCheckoutsDock.vue`, `apps/dashboard/app/pages/index.vue`, `apps/dashboard/app/pages/roster.vue`, `apps/dashboard/app/pages/history.vue`, `apps/dashboard/app/pages/simulator.vue`
 
 - [ ] **Step 1:** Build modular single-responsibility components (`< 400` lines each) and Pinia store backed by `@trial-booking/api-client`.
@@ -75,6 +80,7 @@
 ### Task 6: Multi-Stage Docker Compose, Cloudflare Workers Config, `README.md` & `AI_USAGE.md`
 
 **Files:**
+
 - Create: `Dockerfile`, `docker-compose.yml`, `.dockerignore`, `README.md`, `AI_USAGE.md`, `docs/VIDEO_WALKTHROUGH_SCRIPT.md`
 
 - [ ] **Step 1:** Add multi-stage cached `Dockerfile` and `docker-compose.yml`.

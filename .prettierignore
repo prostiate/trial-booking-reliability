@@ -6,6 +6,9 @@ dist/
 .turbo/
 .lavish/
 .agents/
+.claude/
+docs/prompts/
+skills-lock.json
 pnpm-lock.yaml
 coverage/
 *.min.js

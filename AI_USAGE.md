@@ -52,7 +52,7 @@
 ## 6. How I Verified the Final Implementation
 
 1. **Automated Unit & Concurrency Tests (`pnpm test`)**:
-   Verified all 8 Vitest test cases in [`apps/server/tests/booking-reliability.test.ts`](file:///home/vincent/backupirfanhehe/Downloads/workspaces/personal/trial-booking-reliability/apps/server/tests/booking-reliability.test.ts), including sequential and `Promise.all` concurrent payment submissions for the 4th seat (`LAST_SEAT_RACE_LOST`), duplicate child+class rejection (`DUPLICATE_CONFIRMED_BOOKING`), overbooking cap (`CLASS_CAPACITY_EXCEEDED`), payment failure isolation (`PAYMENT_DECLINED`), and burst rate limiting (`429`).
+   Verified all 8 Vitest test cases in [`apps/server/tests/booking-reliability.test.ts`](./apps/server/tests/booking-reliability.test.ts), including sequential and `Promise.all` concurrent payment submissions for the 4th seat (`LAST_SEAT_RACE_LOST`), duplicate child+class rejection (`DUPLICATE_CONFIRMED_BOOKING`), overbooking cap (`CLASS_CAPACITY_EXCEEDED`), payment failure isolation (`PAYMENT_DECLINED`), and burst rate limiting (`429`).
 2. **Static Analysis & Type Safety Gate (`pnpm verify`)**:
    Ran `prettier --check .`, `eslint` across both Nuxt and Node packages (`@typescript-eslint/no-explicit-any: error`), and `turbo typecheck` (`nuxt typecheck` + `tsc --noEmit`).
 3. **Interactive End-to-End Flow Verification**:

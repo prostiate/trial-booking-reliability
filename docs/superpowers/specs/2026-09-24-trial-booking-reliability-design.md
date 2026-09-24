@@ -11,6 +11,7 @@
 Ottodot runs live online Science and Math classes for children, strictly capped at **4 students per trial class**. Parents book and pay for trial classes self-serve, while teachers and operations teams require an accurate, uncorrupted class roster before class starts.
 
 This design specifies a production-grade TypeScript monorepo (`@trial-booking/server`, `@trial-booking/dashboard`, `@trial-booking/shared`, `@trial-booking/api-client`) that guarantees:
+
 1. **Zero duplicate confirmed bookings** for the same child and trial class (`studentId + trialClassId`).
 2. **Zero overbooking beyond 4 confirmed students** per trial class (`confirmedCount <= 4`).
 3. **Strict payment isolation**: failed payments record a `payment_attempts` audit row and transition the booking to `payment_failed` without ever adding the student to the confirmed roster.
@@ -21,6 +22,7 @@ This design specifies a production-grade TypeScript monorepo (`@trial-booking/se
 ## 2. Frontend-Design Token System & UX Flow
 
 ### 2.1 Visual Identity & Typography (`frontend-design`)
+
 - **Subject & Persona:** Precision EdTech Self-Serve Booking & Live Classroom Operations Telemetry.
 - **Color Palette (High-Contrast WCAG AA, no `text-gray-400` or washed-out muted text; minimum secondary text is `text-slate-500`):**
   - `Cobalt Primary` (`#1D4ED8` / `bg-blue-700`): Primary interactive controls, selected seat indicator, active step.
@@ -32,6 +34,7 @@ This design specifies a production-grade TypeScript monorepo (`@trial-booking/se
   - **Traveloka-Style 4-Seat Classroom Grid + Active Pending Checkouts Dock**: Parents select a parent account, pick a child, and select an explicit seat (`Seat #1`..`Seat #4`) in a visual 4-desk layout. If a parent starts checkout and leaves it in `pending_payment`, the session docks into the **Active Pending Checkouts Switcher**, enabling seamless shopper switching (e.g., switching to Parent B, buying Seat #4, and then clicking "Complete Payment" on Parent A's docked checkout to trigger and observe the real `409 Conflict` e-commerce flow).
 
 ### 2.2 Four Production Views (`@trial-booking/dashboard`)
+
 1. **Self-Serve Trial Booking (`/`)**:
    - Step 1: Select Parent & Child (displays existing enrollments to prevent duplicate bookings).
    - Step 2: Select Trial Class & Classroom Seat (`1..4` visual grid with live occupancy).
@@ -50,6 +53,7 @@ This design specifies a production-grade TypeScript monorepo (`@trial-booking/se
 ## 3. Data Model & State Machine (`@trial-booking/shared`)
 
 ### 3.1 Entities
+
 - **`Parent`**: `id`, `name`, `email`, `phone`
 - **`Student`**: `id`, `parentId`, `name`, `age`, `gradeLevel`
 - **`TrialClass`**: `id`, `title`, `subject` (`Math` | `Science`), `gradeRange`, `teacherName`, `scheduledAt`, `durationMinutes`, `priceIdr`, `maxCapacity` (`4`)
@@ -66,6 +70,7 @@ This design specifies a production-grade TypeScript monorepo (`@trial-booking/se
   - `errorCode`: `string | null`, `message`: `string`, `createdAt`
 
 ### 3.2 Why Optimistic Checkout + Atomic Payment Confirmation (Tradeoffs)
+
 - **Chosen Approach:** Checkout creates a `pending_payment` intent without hard-locking the seat away from other parents; the seat and class capacity (`< 4`) are atomically enforced at payment confirmation time (`POST /api/bookings/:id/pay`).
 - **Why Chosen:** In high-intent trial funnels, hard-locking a seat on `pending_payment` allows abandoned carts or malicious actors to starve a 4-seat class for 10–15 minutes. Optimistic checkout with an atomic confirmation gate guarantees 100% seat utilization while strictly preventing overbooking (`confirmed <= 4`) and aborting payment capture if the last seat was taken milliseconds earlier.
 - **Tradeoff Accepted:** A slower shopper (User A) who lingers on the payment page while User B completes payment for the 4th seat experiences a checkout conflict (`409 LAST_SEAT_RACE_LOST`) upon clicking Pay, requiring an immediate payment abort/void and a prompt to pick another class schedule.

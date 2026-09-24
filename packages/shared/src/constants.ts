@@ -9,17 +9,9 @@ export const BOOKING_STATUSES = [
   'cancelled',
 ] as const;
 
-export const PAYMENT_METHODS = [
-  'card_visa_4242',
-  'card_declined_0002',
-  'qris_instant',
-] as const;
+export const PAYMENT_METHODS = ['card_visa_4242', 'card_declined_0002', 'qris_instant'] as const;
 
-export const PAYMENT_ATTEMPT_STATUSES = [
-  'succeeded',
-  'failed',
-  'aborted_conflict',
-] as const;
+export const PAYMENT_ATTEMPT_STATUSES = ['succeeded', 'failed', 'aborted_conflict'] as const;
 
 export const BOOKING_ERROR_CODES = {
   DUPLICATE_CONFIRMED_BOOKING: 'DUPLICATE_CONFIRMED_BOOKING',
@@ -34,8 +26,7 @@ export const BOOKING_ERROR_CODES = {
   VALIDATION_ERROR: 'VALIDATION_ERROR',
 } as const;
 
-export type BookingErrorCode =
-  (typeof BOOKING_ERROR_CODES)[keyof typeof BOOKING_ERROR_CODES];
+export type BookingErrorCode = (typeof BOOKING_ERROR_CODES)[keyof typeof BOOKING_ERROR_CODES];
 
 export const SIMULATOR_SCENARIOS = [
   'last_seat_race',

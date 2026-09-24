@@ -32,7 +32,7 @@
 
 ## Minute 4:30 – 6:30 · Code Walkthrough & Architectural Tradeoffs
 
-- Open [`apps/server/src/booking-engine.ts`](file:///home/vincent/backupirfanhehe/Downloads/workspaces/personal/trial-booking-reliability/apps/server/src/booking-engine.ts) and [`apps/server/src/store.ts`](file:///home/vincent/backupirfanhehe/Downloads/workspaces/personal/trial-booking-reliability/apps/server/src/store.ts):
+- Open [`apps/server/src/booking-engine.ts`](../apps/server/src/booking-engine.ts) and [`apps/server/src/store.ts`](../apps/server/src/store.ts):
   - Explain `store.runAtomic(...)` (in-memory mutex critical section, which maps to `SELECT ... FOR UPDATE` + partial unique indexes `WHERE status = 'confirmed'` in PostgreSQL).
   - Explain **why** we chose **Optimistic Checkout (`pending_payment`) + Atomic Confirmation at Payment**: hard-locking a seat on `pending_payment` allows cart abandoners to block a 4-seat class for 15 minutes, whereas atomic confirmation at payment maximizes utilization while guaranteeing zero overbooking and zero double charges (via manual-capture pre-authorization in production).
 - Run `pnpm verify && pnpm test` in the terminal to show all 8 Vitest concurrency and edge-case tests passing in `< 100ms`.

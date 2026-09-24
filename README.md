@@ -49,7 +49,7 @@ Open [http://localhost:24002](http://localhost:24002).
 
 ### Option C: Cloudflare Workers (2 Workers: Frontend + Backend API)
 
-Configured via [`apps/server/wrangler.jsonc`](file:///home/vincent/backupirfanhehe/Downloads/workspaces/personal/trial-booking-reliability/apps/server/wrangler.jsonc) and [`apps/dashboard/wrangler.jsonc`](file:///home/vincent/backupirfanhehe/Downloads/workspaces/personal/trial-booking-reliability/apps/dashboard/wrangler.jsonc) using same-origin route specificity on `trial-booking-reliability.irfankurniawan.com`:
+Configured via [`apps/server/wrangler.jsonc`](./apps/server/wrangler.jsonc) and [`apps/dashboard/wrangler.jsonc`](./apps/dashboard/wrangler.jsonc) using same-origin route specificity on `trial-booking-reliability.irfankurniawan.com`:
 
 - **Frontend Worker (`trial-booking-dashboard`)**: `trial-booking-reliability.irfankurniawan.com`
 - **Backend Worker (`trial-booking-server`)**: `trial-booking-reliability.irfankurniawan.com/api/*`
@@ -86,7 +86,7 @@ We implemented **trial class booking only** (deliberately excluding recurring en
 
 ## 3. Seed Data & Pre-Configured Edge Cases
 
-Defined in [`apps/server/src/seed.ts`](file:///home/vincent/backupirfanhehe/Downloads/workspaces/personal/trial-booking-reliability/apps/server/src/seed.ts) (can be reset at any time via the **Reset Data** button in the top navbar or `POST /api/reset`):
+Defined in [`apps/server/src/seed.ts`](./apps/server/src/seed.ts) (can be reset at any time via the **Reset Data** button in the top navbar or `POST /api/reset`):
 
 | Class ID             | Class Title                                              | Initial Confirmed Roster                                                                           | Edge Case Demonstrated                                                                                                                                                                                               |
 | :------------------- | :------------------------------------------------------- | :------------------------------------------------------------------------------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
