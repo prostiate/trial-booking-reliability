@@ -1,0 +1,38 @@
+{
+  "name": "@trial-booking/dashboard",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "nuxt build",
+    "dev": "PORT=24002 nuxt dev --port 24002",
+    "preview": "nuxt preview --port 24002",
+    "deploy": "nuxt build && wrangler deploy",
+    "postinstall": "nuxt prepare",
+    "lint": "eslint .",
+    "typecheck": "nuxt typecheck",
+    "test": "node -e \"console.log('Dashboard type/lint verified')\""
+  },
+  "dependencies": {
+    "@iconify-json/lucide": "^1.2.125",
+    "@nuxt/ui": "^4.11.0",
+    "@pinia/nuxt": "^0.11.0",
+    "@trial-booking/api-client": "workspace:*",
+    "@trial-booking/shared": "workspace:*",
+    "@vueuse/core": "^14.4.0",
+    "@vueuse/nuxt": "^14.4.0",
+    "nuxt": "^4.5.2",
+    "pinia": "^3.0.4",
+    "tailwindcss": "^4.3.3",
+    "vue": "^3.5.41",
+    "zod": "^3.24.2"
+  },
+  "devDependencies": {
+    "@nuxt/eslint": "^1.17.0",
+    "eslint": "^10.9.0",
+    "eslint-config-prettier": "^10.1.8",
+    "typescript": "^5.8.2",
+    "vue-tsc": "^3.3.11",
+    "wrangler": "^4.129.0"
+  }
+}

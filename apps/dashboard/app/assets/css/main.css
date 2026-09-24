@@ -1,0 +1,11 @@
+@import 'tailwindcss' theme(static);
+@import '@nuxt/ui';
+
+@theme static {
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: 'JetBrains Mono', 'SF Mono', Menlo, Monaco, Consolas, monospace;
+}
+
+:root {
+  font-family: var(--font-sans);
+}
