@@ -5,7 +5,7 @@
   "compatibility_date": "2025-04-01",
   "compatibility_flags": ["nodejs_compat"],
   "account_id": "6d77e57de3a65164e5b56e716791b75a",
-  "workers_dev": true,
+  "workers_dev": false,
   "routes": [
     {
       "pattern": "trial-booking-reliability.irfankurniawan.com/api/*",
