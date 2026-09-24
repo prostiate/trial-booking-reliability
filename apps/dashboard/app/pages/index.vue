@@ -111,11 +111,14 @@ async function handleConfirmSeat() {
 
     <div class="lg:col-span-4">
       <PendingCheckoutsDock
-        :pending-checkouts="bookingStore.pendingCheckouts"
+        :selected-class-title="bookingStore.selectedClass?.title ?? 'Selected Class'"
+        :pending-checkouts="bookingStore.selectedClassPendingCheckouts"
         :last-outcome="bookingStore.lastOutcome"
         :is-loading="bookingStore.isLoading"
         @complete-payment="(id, outcome) => bookingStore.completePendingPayment(id, outcome)"
-        @cancel-booking="(id) => bookingStore.cancelPendingBooking(id)" />
+        @cancel-booking="(id) => bookingStore.cancelPendingBooking(id)"
+        @pay-all="(outcomes) => bookingStore.payAllPendingForSelectedClass(outcomes)"
+        @cancel-all="() => bookingStore.cancelAllPendingForSelectedClass()" />
     </div>
   </div>
 </template>

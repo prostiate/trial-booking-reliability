@@ -40,6 +40,15 @@ export const useBookingStore = defineStore('booking', () => {
     () => classes.value.find((c) => c.id === selectedClassId.value) ?? null
   );
 
+  const selectedClassPendingCheckouts = computed(() =>
+    pendingCheckouts.value
+      .filter((b) => b.trialClassId === selectedClassId.value)
+      .sort((a, b) => {
+        const cmp = b.createdAt.localeCompare(a.createdAt);
+        return cmp !== 0 ? cmp : b.id.localeCompare(a.id);
+      })
+  );
+
   watch(selectedParentId, (newParentId) => {
     const children = students.value.filter((s) => s.parentId === newParentId);
     if (children.length > 0 && !children.some((c) => c.id === selectedStudentId.value)) {
@@ -151,6 +160,95 @@ export const useBookingStore = defineStore('booking', () => {
     }
   }
 
+  async function payAllPendingForSelectedClass(
+    outcomesByBookingId: Record<string, 'success' | 'fail'> = {}
+  ) {
+    const targets = [...selectedClassPendingCheckouts.value];
+    if (targets.length === 0) return null;
+
+    isLoading.value = true;
+    try {
+      const results = await Promise.all(
+        targets.map(async (item) => {
+          const outcome = outcomesByBookingId[item.id] ?? 'success';
+          const res = await api.api.bookings[':id'].pay.$post({
+            param: { id: item.id },
+            json: {
+              paymentOutcome: outcome,
+              paymentMethod: outcome === 'success' ? 'card_visa_4242' : 'card_declined_0002',
+            },
+          });
+          const body = await res.json();
+          return {
+            status: res.status,
+            ok: body.ok,
+            errorCode: body.errorCode,
+            message: body.message,
+            data: body.data,
+          };
+        })
+      );
+
+      if (results.length === 1 && results[0]) {
+        lastOutcome.value = {
+          ok: results[0].ok,
+          httpStatus: results[0].status,
+          errorCode: results[0].errorCode,
+          message: results[0].message,
+          booking: results[0].data,
+        };
+      } else {
+        const confirmedCount = results.filter((r) => r.ok).length;
+        const rejectedCount = results.length - confirmedCount;
+        const details = results.map((r) => r.message).join(' | ');
+        lastOutcome.value = {
+          ok: rejectedCount === 0,
+          httpStatus: rejectedCount === 0 ? 200 : 409,
+          errorCode:
+            rejectedCount === 0
+              ? null
+              : (results.find((r) => !r.ok)?.errorCode ?? 'BATCH_PARTIAL_CONFLICT'),
+          message: `Pay All (${results.length}): ${confirmedCount} confirmed, ${rejectedCount} rejected/failed. ${details}`,
+          booking: results[0]?.data ?? null,
+        };
+      }
+
+      await fetchCatalog();
+      return lastOutcome.value;
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+  async function cancelAllPendingForSelectedClass() {
+    const targets = [...selectedClassPendingCheckouts.value];
+    if (targets.length === 0) return null;
+
+    isLoading.value = true;
+    try {
+      const results = await Promise.all(
+        targets.map(async (item) => {
+          const res = await api.api.bookings[':id'].cancel.$post({
+            param: { id: item.id },
+          });
+          return res.json();
+        })
+      );
+
+      lastOutcome.value = {
+        ok: true,
+        httpStatus: 200,
+        errorCode: null,
+        message: `Cancelled all ${results.length} pending checkout(s) for ${selectedClass.value?.title ?? 'selected class'}.`,
+        booking: null,
+      };
+      await fetchCatalog();
+      return lastOutcome.value;
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
   async function createTrialClass(input: CreateTrialClassInput) {
     isLoading.value = true;
     try {
@@ -185,6 +283,7 @@ export const useBookingStore = defineStore('booking', () => {
     students,
     classes,
     pendingCheckouts,
+    selectedClassPendingCheckouts,
     isLoading,
     lastOutcome,
     selectedParentId,
@@ -197,6 +296,8 @@ export const useBookingStore = defineStore('booking', () => {
     submitBookingAction,
     completePendingPayment,
     cancelPendingBooking,
+    payAllPendingForSelectedClass,
+    cancelAllPendingForSelectedClass,
     createTrialClass,
     resetStoreData,
   };

@@ -64,7 +64,10 @@ const app = new Hono()
     const pendingCheckouts = Array.from(bookingStore.bookings.values())
       .filter((b) => b.status === 'pending_payment')
       .map((b) => engine.enrichBooking(b))
-      .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+      .sort((a, b) => {
+        const cmp = b.createdAt.localeCompare(a.createdAt);
+        return cmp !== 0 ? cmp : b.id.localeCompare(a.id);
+      });
 
     return c.json({
       ok: true,

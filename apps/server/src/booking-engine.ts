@@ -121,17 +121,18 @@ export class BookingEngine {
           b.seatNumber === input.seatNumber &&
           b.status === 'pending_payment'
       );
+      const now = new Date().toISOString();
       if (existingPending) {
+        existingPending.createdAt = now;
+        existingPending.updatedAt = now;
         return {
           ok: true,
           httpStatus: 200,
           errorCode: null,
-          message: `Resumed pending checkout for ${student.name} on Seat #${input.seatNumber}.`,
+          message: `Updated pending checkout timestamp for ${student.name} on Seat #${input.seatNumber}.`,
           data: this.enrichBooking(existingPending),
         };
       }
-
-      const now = new Date().toISOString();
       const newBooking: BookingRecord = {
         id: this.store.nextId('bkg'),
         parentId: parent.id,
