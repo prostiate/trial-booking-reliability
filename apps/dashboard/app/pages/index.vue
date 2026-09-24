@@ -1,8 +1,11 @@
 <script setup lang="ts">
 import { CreateCheckoutInputSchema, type SeatNumber } from '@trial-booking/shared';
+import { useAutoStagePresets } from '~/composables/useAutoStagePresets';
 import { useBookingStore } from '~/stores/booking';
 
 const bookingStore = useBookingStore();
+const { stageRandomChild, stageSameSeatRace, stageDuplicateChild, stageOverbookCapacity } =
+  useAutoStagePresets();
 
 await useAsyncData('booking-catalog', () => bookingStore.fetchCatalog());
 
@@ -168,20 +171,68 @@ async function handleConfirmSeat() {
           @update:selected-seat-number="(seat) => (bookingStore.selectedSeatNumber = seat)" />
 
         <UCard>
-          <div class="flex items-center justify-between gap-3">
-            <span class="text-xs font-medium text-slate-600">
-              Selected Seat #{{ bookingStore.selectedSeatNumber }} ·
-              {{ bookingStore.selectedClass?.title }}
-            </span>
+          <div class="space-y-3">
+            <div class="flex items-center justify-between gap-3">
+              <span class="text-xs font-medium text-slate-600">
+                Selected Seat #{{ bookingStore.selectedSeatNumber }} ·
+                {{ bookingStore.selectedClass?.title }}
+              </span>
 
-            <UButton
-              color="primary"
-              size="sm"
-              icon="i-lucide-check-circle-2"
-              :loading="bookingStore.isLoading"
-              @click="handleConfirmSeat">
-              Confirm Seat
-            </UButton>
+              <UButton
+                color="primary"
+                size="sm"
+                icon="i-lucide-check-circle-2"
+                :loading="bookingStore.isLoading"
+                @click="handleConfirmSeat">
+                Confirm Seat
+              </UButton>
+            </div>
+
+            <div class="pt-3 border-t border-slate-200 flex flex-wrap items-center gap-2">
+              <span class="text-xs font-bold text-slate-700 mr-1">
+                Auto-Select &amp; Confirm to Pending:
+              </span>
+
+              <UButton
+                color="neutral"
+                variant="subtle"
+                size="xs"
+                icon="i-lucide-shuffle"
+                :loading="bookingStore.isLoading"
+                @click="stageRandomChild">
+                Random Seat
+              </UButton>
+
+              <UButton
+                color="warning"
+                variant="subtle"
+                size="xs"
+                icon="i-lucide-zap"
+                :loading="bookingStore.isLoading"
+                @click="stageSameSeatRace">
+                Same Taken Seat Race (2x)
+              </UButton>
+
+              <UButton
+                color="warning"
+                variant="subtle"
+                size="xs"
+                icon="i-lucide-copy"
+                :loading="bookingStore.isLoading"
+                @click="stageDuplicateChild">
+                Duplicate Child (2x)
+              </UButton>
+
+              <UButton
+                color="error"
+                variant="subtle"
+                size="xs"
+                icon="i-lucide-users"
+                :loading="bookingStore.isLoading"
+                @click="stageOverbookCapacity">
+                Overbook Class (&gt;4 Cap)
+              </UButton>
+            </div>
           </div>
         </UCard>
       </UForm>
